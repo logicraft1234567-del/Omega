@@ -1,13 +1,13 @@
-Flask>=3.0.3
-Flask-SQLAlchemy>=3.1.1
+Flask>=3.0.3,<4
+Flask-SQLAlchemy>=3.1.1,<4
+SQLAlchemy>=2.0.30,<2.1
 Flask-Login>=0.6.3
 Flask-WTF>=1.2.1
 Flask-Migrate>=4.0.7
 Flask-Limiter>=3.8.0
 Flask-Compress>=1.15
-# psycopg2-binary 2.9.10+ ships wheels for Python 3.13 (older versions try to compile and need pg_config).
-# Only needed when DATABASE_URL points at PostgreSQL; the default SQLite database does not use it.
-psycopg2-binary>=2.9.10
+# PostgreSQL driver (psycopg v3). Used when DATABASE_URL points at Postgres; SQLite needs nothing.
+psycopg[binary]>=3.2.10,<4
 opencv-python-headless>=4.10.0.84
 Pillow>=10.4.0
 numpy>=1.26
@@ -16,4 +16,3 @@ pydantic>=2.8
 requests>=2.32
 python-dotenv>=1.0
 gunicorn>=22.0
-pytest>=8.0

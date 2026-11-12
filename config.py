@@ -9,7 +9,12 @@ def _db_url():
     if not url:
         os.makedirs(os.path.join(BASE, "instance"), exist_ok=True)
         return "sqlite:///" + os.path.join(BASE, "instance", "omega.db")
-    return url.replace("postgres://", "postgresql://", 1)
+    # Be explicit about the driver (psycopg v3). A bare "postgresql://" lets SQLAlchemy pick the
+    # driver itself, which changed between versions and caused "No module named 'psycopg'" on Render.
+    for prefix in ("postgres://", "postgresql://", "postgresql+psycopg2://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
 
 
 class Config:
