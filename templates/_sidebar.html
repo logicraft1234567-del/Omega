@@ -1,0 +1,44 @@
+{% macro item(eps, label, ic, href, count=0) -%}
+<a href="{{ href }}" class="{{ 'on' if request.endpoint in eps }}" {% if request.endpoint in eps %}aria-current="page"{% endif %}>{{ icon(ic) }}<span>{{ label }}</span>{% if count %}<span class="count">{{ count }}</span>{% endif %}</a>
+{%- endmacro %}
+{% set role = current_user.role %}
+<aside class="side" id="side" aria-label="Main navigation">
+  <a class="brand" href="{{ url_for('orders.dashboard') }}"><img src="{{ url_for('static', filename='img/omega-mark.png') }}" alt=""><span>OMEGA</span></a>
+  <nav class="side-nav">
+    <div class="side-label">Workspace</div>
+    {% if role == 'admin' %}
+      {{ item(['admin.overview'], 'Overview', 'layout-dashboard', url_for('admin.overview')) }}
+    {% else %}
+      {{ item(['orders.dashboard'], 'Overview', 'layout-dashboard', url_for('orders.dashboard')) }}
+    {% endif %}
+    {{ item(['market.browse','market.product','orders.checkout','market.seller_profile'], 'Marketplace', 'store', url_for('market.browse')) }}
+    {% if role == 'seller' %}{{ item(['portal.listings','market.new_listing'], 'My Listings', 'tag', url_for('portal.listings')) }}{% endif %}
+    {% if role == 'admin' %}{{ item(['admin.orders','orders.detail','orders.report'], 'Transactions', 'arrow-left-right', url_for('admin.orders')) }}
+    {% else %}{{ item(['portal.transactions','orders.detail','orders.report'], 'My Transactions', 'arrow-left-right', url_for('portal.transactions'), action_count) }}{% endif %}
+    {{ item(['portal.verification'], 'Verification Center', 'scan-search', url_for('portal.verification')) }}
+    {% if role == 'admin' %}{{ item(['admin.payments'], 'Payments', 'wallet', url_for('admin.payments')) }}
+    {% else %}{{ item(['portal.payments'], 'Payments', 'wallet', url_for('portal.payments')) }}{% endif %}
+    {% if role == 'admin' %}{{ item(['admin.disputes'], 'Disputes', 'flag', url_for('admin.disputes')) }}
+    {% else %}{{ item(['portal.disputes'], 'Disputes', 'flag', url_for('portal.disputes')) }}{% endif %}
+    {% if role == 'admin' %}
+      <div class="side-label">Administration</div>
+      {{ item(['admin.fraud'], 'Fraud alerts', 'shield-alert', url_for('admin.fraud')) }}
+      {{ item(['admin.products'], 'Listings', 'package-search', url_for('admin.products')) }}
+      {{ item(['admin.users'], 'Users', 'users', url_for('admin.users')) }}
+      {{ item(['admin.audit_log'], 'Audit log', 'scroll-text', url_for('admin.audit_log')) }}
+    {% endif %}
+    <div class="side-label">Account</div>
+    {{ item(['market.notifications'], 'Notifications', 'bell', url_for('market.notifications'), unread) }}
+    {{ item(['market.profile'], 'Profile', 'user-round', url_for('market.profile')) }}
+    {{ item(['portal.settings'], 'Settings', 'settings', url_for('portal.settings')) }}
+  </nav>
+  <div class="side-foot">
+    <div class="side-pay {{ {'paypal_standard':'ok','paypal_marketplace':'ok','unconfigured':'bad'}.get(payment_mode,'') }}" title="Payment provider status">Payments: {{ payment_label }}</div>
+    <div class="side-user">
+      {% if current_user.photo %}<img class="avatar" src="{{ url_for('market.product_media', name=current_user.photo) }}" alt="">{% else %}<span class="avatar">{{ current_user.initials }}</span>{% endif %}
+      <div><b>{{ current_user.name }}</b><small>{{ role }} account</small></div>
+    </div>
+    <form method="post" action="{{ url_for('auth.logout') }}" class="side-nav" style="margin-top:6px"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">{{ icon('log-out') }}<span>Log out</span></button></form>
+  </div>
+</aside>
+<div class="side-scrim" data-scrim></div>

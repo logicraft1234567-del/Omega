@@ -1,0 +1,13 @@
+{% extends 'base.html' %}{% from '_macros.html' import status, icon, empty, thumb with context %}{% block title %}Search · Omega{% endblock %}
+{% block content %}
+<div class="ph"><div><h1>Search</h1><p>{% if q %}Results for “{{ q }}” across your transactions, disputes and the marketplace.{% else %}Search your transactions, disputes and marketplace listings.{% endif %}</p></div></div>
+{% if not q %}<section class="glass panel">{{ empty('search', 'Type something to search', 'Try a transaction reference, an item name or a person\'s name.') }}</section>
+{% elif not (tx or disputes or products or users) %}<section class="glass panel">{{ empty('search-x', 'No results for “' ~ q ~ '”', 'Check the spelling or try a shorter search.') }}</section>
+{% else %}
+<div class="stack">
+{% if tx %}<section class="glass panel"><div class="sect-h"><h2>Transactions</h2></div><div class="res">{% for t in tx %}<a href="{{ url_for('orders.detail', ref=t.ref) }}"><span class="r-b"><b>{{ t.product.title }}</b><small class="mono">{{ t.ref }}</small> · <small>{{ t.amount|money }}</small></span>{{ status(t.status) }}</a>{% endfor %}</div></section>{% endif %}
+{% if disputes %}<section class="glass panel"><div class="sect-h"><h2>Disputes</h2></div><div class="res">{% for d in disputes %}<a href="{{ url_for('orders.detail', ref=d.transaction.ref) }}"><span class="r-b"><b>Case #{{ d.id }} · {{ d.reason.replace('_',' ')|capitalize }}</b><small>{{ d.transaction.product.title }} · {{ d.transaction.ref }}</small></span><span class="badge {{ 'b-ok' if d.status=='resolved' else 'b-bad' }}">{{ d.status|capitalize }}</span></a>{% endfor %}</div></section>{% endif %}
+{% if products %}<section class="glass panel"><div class="sect-h"><h2>Marketplace listings</h2></div><div class="res">{% for p in products %}<a href="{{ url_for('market.product', pid=p.id) }}"><span class="dt" style="display:block"><span class="prod">{{ thumb(p) }}</span></span><span class="r-b"><b>{{ p.title }}</b><small>{{ p.price|money }} · {{ p.seller.name }}</small></span></a>{% endfor %}</div></section>{% endif %}
+{% if users %}<section class="glass panel"><div class="sect-h"><h2>Users</h2></div><div class="res">{% for u in users %}<a href="{{ url_for('market.seller_profile', uid=u.id) }}"><span class="avatar">{{ u.initials }}</span><span class="r-b"><b>{{ u.name }}</b><small>{{ u.email }} · {{ u.role }}</small></span></a>{% endfor %}</div></section>{% endif %}
+</div>{% endif %}
+{% endblock %}

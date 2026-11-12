@@ -1,0 +1,39 @@
+{% extends 'base.html' %}{% from '_macros.html' import status, icon, empty, pager, engine with context %}{% block title %}Verification Center · Omega{% endblock %}
+{% block content %}
+<div class="ph"><div><h1>Verification Center</h1><p>The real state of the evidence on each transaction. AI findings are shown exactly as reported. Whether money may move is decided separately by Omega's backend release policy.</p></div>
+  <div class="chips"><a href="{{ url_for('portal.verification') }}" class="{{ 'on' if show=='all' }}">All</a><a href="{{ url_for('portal.verification', show='open') }}" class="{{ 'on' if show=='open' }}">Still open</a></div></div>
+
+{% if ai_status %}<div class="glass panel" style="margin-bottom:20px"><div class="row between"><b>AI engine status</b><span class="small muted">Checked live from the configured providers</span></div>
+  <div class="row" style="margin-top:10px">{% for k in ('fire','water') %}{% set e = ai_status[k] %}<div>{{ engine(k, e.ok) }}{% if not e.ok %}<div class="small" style="color:var(--warn);margin-top:6px">{{ e.reason }}</div>{% endif %}</div>{% endfor %}</div></div>{% endif %}
+
+{% for t, v, me in items %}
+<section class="glass vc" style="margin-bottom:18px">
+  <div class="vc-h"><div class="t"><b>{{ t.product.title }}</b><small><span class="mono">{{ t.ref }}</span> · {{ t.amount|money }}</small></div><div class="row">{{ status(t.status) }}<a class="btn btn-sm" href="{{ url_for('orders.detail', ref=t.ref) }}">Open transaction</a></div></div>
+  <div class="vc-grid">
+    <div class="vc-cell"><span class="lbl">{{ icon('video') }} Seller verification video</span><span class="val">{{ v.seller.status }}</span>
+      <p>{% if v.seller.submitted %}Uploaded {{ v.seller.evidence.created_at|dt }} UTC.{% else %}The seller has not uploaded this yet.{% endif %}</p></div>
+    <div class="vc-cell"><span class="lbl">{{ icon('camera') }} Buyer unboxing video</span><span class="val">{{ v.buyer.status }}</span>
+      <p>{% if v.buyer.submitted %}Uploaded {{ v.buyer.evidence.created_at|dt }} UTC.{% else %}Not uploaded yet. It is requested after delivery is confirmed.{% endif %}</p></div>
+    <div class="vc-cell"><span class="lbl">{{ icon('git-compare') }} Analysis</span>
+      <span class="val">{% if v.analysing %}In progress{% elif v.comparison %}{{ v.comparison.recommendation.replace('_',' ').capitalize() }}{% elif v.unavailable %}Waiting for the AI service{% else %}No comparison yet{% endif %}</span>
+      <p>{% if v.comparison %}Produced {{ v.comparison.created_at|dt }} UTC by the comparison engine. Reported confidence: {{ '%.0f'|format((v.comparison.confidence or 0)*100) }}%.{% elif v.analysing %}This page's status updates when the analysis finishes.{% else %}The comparison runs once both videos are in.{% endif %}</p></div>
+  </div>
+  {% if v.discrepancies or v.missing or v.unavailable or (v.comparison and v.report.explanation) %}
+  <div class="vc-find">
+    {% if v.report.explanation %}<p class="muted" style="margin:0">{{ v.report.explanation }}</p>{% endif %}
+    {% for d in v.discrepancies %}<div class="diff">{{ icon('octagon-alert') }} {{ d }}</div>{% endfor %}
+    {% for m in v.missing %}<div class="diff" style="background:rgba(255,200,87,.12);border-color:rgba(255,200,87,.5)">{{ icon('circle-help') }} Missing evidence: {{ m }}</div>{% endfor %}
+    {% for i in v.unavailable %}<div class="diff" style="background:rgba(255,200,87,.12);border-color:rgba(255,200,87,.5)">{{ icon('triangle-alert') }} {{ i.engine|capitalize }} could not run: {{ i.reason }}</div>{% endfor %}
+    {% if v.comparison and not v.discrepancies and not v.missing and v.comparison.recommendation=='ELIGIBLE_FOR_REVIEW' %}<div class="okbox">{{ icon('check') }} The engines found no differences between the two videos.</div>{% endif %}
+  </div>{% endif %}
+  <div class="vc-policy"><span class="lbl">Human review</span><b style="font-size:.92rem">{{ v.human }}</b>
+    <span class="lbl" style="margin-top:8px">Backend release policy (separate from AI)</span>
+    <b style="font-size:.92rem">{% if t.status=='COMPLETED' %}Payment released{% elif v.verdict.eligible %}All {{ v.verdict.checks|length }} release checks pass{% else %}{{ v.verdict.checks|selectattr('ok')|list|length }} of {{ v.verdict.checks|length }} release checks pass{% endif %}</b>
+    {% if not v.verdict.eligible and t.status != 'COMPLETED' %}<small class="muted">Still required: {{ v.verdict.blockers|join('; ') }}</small>{% endif %}</div>
+  <div class="vc-sep">AI output is a recommendation about the footage. It cannot approve, release or refund a payment.</div>
+</section>
+{% else %}
+<section class="glass panel">{{ empty('scan-search', 'No verification requests yet', 'Evidence and verification results appear here after a payment is secured on one of your transactions.', url_for('market.browse') if current_user.role=='buyer' else none, 'Browse marketplace') }}</section>
+{% endfor %}
+{% if items %}<section class="glass panel flush">{{ pager(pg) }}</section>{% endif %}
+{% endblock %}

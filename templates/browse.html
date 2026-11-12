@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% from '_macros.html' import pcard, icon with context %}{% block title %}Browse · Omega{% endblock %}
+{% block content %}
+<h1 class="h2">Protected listings</h1><p class="lead mt-s">Every item here is paid through Omega, so your money is held until it's verified.</p>
+<form class="glass pad mt" method="get" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:12px;align-items:end">
+  <div class="field" style="margin:0"><label>Search</label><input type="search" name="q" value="{{ args.get('q','') }}" placeholder="iPhone 15, MacBook…"></div>
+  <div class="field" style="margin:0"><label>Condition</label><select name="condition"><option value="">Any</option>{% for c in ['Like new','Good','Fair','Poor'] %}<option {{ 'selected' if args.get('condition')==c }}>{{ c }}</option>{% endfor %}</select></div>
+  <div class="field" style="margin:0"><label>Min $</label><input type="number" name="min" value="{{ args.get('min','') }}" min="0"></div>
+  <div class="field" style="margin:0"><label>Max $</label><input type="number" name="max" value="{{ args.get('max','') }}" min="0"></div>
+  <div class="field" style="margin:0"><label>Sort</label><select name="sort"><option value="">Newest</option><option value="low" {{ 'selected' if args.get('sort')=='low' }}>Price low–high</option><option value="high" {{ 'selected' if args.get('sort')=='high' }}>Price high–low</option></select></div>
+  <button class="btn btn-primary">{{ icon('search') }} Filter</button>
+</form>
+<style>@media(max-width:900px){form.glass[method=get]{grid-template-columns:1fr 1fr!important}}</style>
+{% if items %}<div class="grid g4 mt">{% for p in items %}{{ pcard(p) }}{% endfor %}</div>
+{% else %}<div class="glass empty mt">No listings match. Try clearing a filter.</div>{% endif %}
+{% endblock %}

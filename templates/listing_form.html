@@ -1,0 +1,21 @@
+{% extends 'base.html' %}{% block title %}New listing · Omega{% endblock %}
+{% block content %}
+<h1 class="h2">List an item</h1><p class="lead mt-s">Accurate details protect you in a dispute. Omega checks your listing for risk before it goes live.</p>
+<form method="post" enctype="multipart/form-data" class="glass pad mt" data-busy style="max-width:860px"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="field"><label>Title</label><input type="text" name="title" required value="{{ f.get('title','') }}" placeholder="iPhone 15 Pro 256GB — Natural Titanium"></div>
+  <div class="form-grid">
+    <div class="field"><label>Category</label><select name="category">{% for c in ['Phones','Laptops','Tablets','Consoles','Audio','Other'] %}<option>{{ c }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Condition</label><select name="condition">{% for c in ['Like new','Good','Fair','Poor'] %}<option>{{ c }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Brand</label><input type="text" name="brand" value="{{ f.get('brand','') }}"></div>
+    <div class="field"><label>Model</label><input type="text" name="model" required value="{{ f.get('model','') }}" placeholder="iPhone 15 Pro"></div>
+    <div class="field"><label>Storage</label><input type="text" name="storage" value="{{ f.get('storage','') }}" placeholder="256GB"></div>
+    <div class="field"><label>Colour</label><input type="text" name="colour" value="{{ f.get('colour','') }}"></div>
+    <div class="field"><label>Serial number / IMEI</label><input type="text" name="serial" value="{{ f.get('serial','') }}"><span class="hint">Listings with a serial score lower on risk.</span></div>
+    <div class="field"><label>Price (USD)</label><input type="number" name="price" step="0.01" min="1" required value="{{ f.get('price','') }}"></div>
+  </div>
+  <div class="field"><label>Description</label><textarea name="description" placeholder="Battery health, accessories, scratches, reason for selling…">{{ f.get('description','') }}</textarea></div>
+  <label class="upload"><input type="file" name="images" accept="image/*" multiple required><b>Add 1–5 photos of the actual item</b><span class="pick">Click or drop images here</span></label>
+  <p class="hint mt-s">Photos copied from other listings are detected automatically. Don't put phone numbers or ask for off-platform payment — it's flagged.</p>
+  <button class="btn btn-primary mt" type="submit">Publish listing</button>
+</form>
+{% endblock %}

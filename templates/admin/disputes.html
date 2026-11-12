@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% from '_macros.html' import status with context %}{% block title %}Disputes · Admin{% endblock %}
+{% block content %}<h1 class="h2">Dispute management</h1><div class="mt">{% include 'admin/_nav.html' %}</div>
+<div class="glass pad"><div class="table-wrap"><table class="o"><tr><th>Case</th><th>Order</th><th>Reason</th><th>Opened by</th><th>State</th><th>Order status</th><th></th></tr>
+{% for d in rows %}<tr><td>#{{ d.id }}</td><td class="mono">{{ d.transaction.ref }}</td><td>{{ d.reason.replace('_',' ') }}</td><td>{{ d.opened_by.name }}</td><td><span class="badge {{ 'b-ok' if d.status=='resolved' else 'b-bad' }}">{{ d.status }}</span></td><td>{{ status(d.transaction.status) }}</td><td><a class="btn btn-sm" href="{{ url_for('orders.detail', ref=d.transaction.ref) }}">Open case</a></td></tr>{% else %}<tr><td colspan="7" class="empty">No disputes.</td></tr>{% endfor %}</table></div></div>{% endblock %}

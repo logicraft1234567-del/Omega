@@ -1,0 +1,175 @@
+{% extends 'base.html' %}{% from '_macros.html' import status, risk_badge, icon, engine, stage_timeline with context %}{% block title %}Order {{ tx.ref }} · Omega{% endblock %}
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+{% set lvl = 'low' if tx.risk_score < 25 else 'medium' if tx.risk_score < 50 else 'high' %}
+{% block content %}
+<div {% if pending %}data-poll="{{ url_for('orders.status_json', ref=tx.ref) }}" data-status="{{ tx.status }}"{% endif %}>
+<div class="row between">
+  <div><span class="chip">Order {{ tx.ref }}</span><h1 class="h2" style="font-size:1.8rem;margin-top:10px">{{ tx.product.title }}</h1>
+    <div class="row mt-s">{{ status(tx.status) }}<span class="price" style="font-size:1.1rem">{{ tx.amount|money }}</span>{{ risk_badge(lvl, tx.risk_score) }}<span class="small muted">{{ tx.buyer.name }} → {{ tx.seller.name }}</span></div></div>
+  <div class="row no-print"><a class="btn btn-sm" href="{{ url_for('orders.report', ref=tx.ref) }}">{{ icon('file-text') }} Evidence report</a><a class="btn btn-sm" href="{{ url_for('orders.report_json', ref=tx.ref) }}">{{ icon('download') }} JSON</a></div>
+</div>
+
+<div class="glass pad mt" style="padding-bottom:10px">
+  {% set idx = tx.flow_index() %}
+  <div class="flow">{% for s in MAIN_FLOW %}<div class="flow-step {{ 'done' if idx is not none and loop.index0 < idx or tx.status=='COMPLETED' else 'now' if idx is not none and loop.index0==idx else '' }}"><i></i>{{ STATUS_LABELS[s] }}</div>{% endfor %}</div>
+  {% if idx is none %}<p class="small" style="margin:0 0 10px">Currently off the main path: {{ status(tx.status) }}</p>{% endif %}
+</div>
+
+{% if pending %}<div class="analysing mt"><span class="spinner"></span><div><b>Omega is analysing the video</b><br><span class="small muted">{{ engine('fire') }} is watching the video and {{ engine('water') }} is checking still frames. This page updates itself — you can also leave and come back.</span></div></div>{% endif %}
+{% if ai_down %}<div class="aidown mt">{{ icon('triangle-alert') }}<div><b>The AI couldn't finish checking this order</b><br><span class="small muted">Nothing was guessed, and no money moves until a real result exists. The video itself is safe and nothing is wrong with it.</span>
+  {% for i in ai_down %}<p class="why">{{ engine(i.engine) }} &nbsp;{{ i.reason }}</p>{% endfor %}
+  <form method="post" action="{{ url_for('orders.retry_analysis', ref=tx.ref) }}" class="mt-s">{{ csrf() }}<button class="btn btn-sm">{{ icon('rotate-cw') }} Retry analysis</button></form></div></div>{% endif %}
+
+
+<div class="split mt">
+<div class="stack">
+
+  {# ---------------- ACTIONS ---------------- #}
+  {% if tx.status=='AWAITING_PAYMENT' and me=='buyer' %}
+    <div class="glass pad"><h3 class="h3">Finish paying</h3><p class="muted">Your order is reserved. Approve the payment to secure it.</p><a class="btn btn-primary" href="{{ tx.payment.approve_url }}">Continue to payment</a></div>
+  {% endif %}
+
+  {% if me=='seller' and tx.status in ('SELLER_VERIFICATION','NEEDS_MORE_EVIDENCE','READY_TO_SHIP') and not tx.agreement.acked_by('seller') %}
+    <div class="glass pad"><h3 class="h3">Confirm the listing details</h3><p class="muted">Confirm the product matches the agreement below. Shipping unlocks once both sides have confirmed and your video is accepted.</p>
+      <form method="post" action="{{ url_for('orders.ack', ref=tx.ref) }}">{{ csrf() }}<button class="btn btn-primary">{{ icon('check') }} I confirm these details</button></form></div>
+  {% endif %}
+
+  {% if me=='seller' and (tx.status=='SELLER_VERIFICATION' or (tx.status=='NEEDS_MORE_EVIDENCE' and tx.needs_evidence_from=='seller')) and not pending %}
+    <div class="glass pad stack"><h3 class="h3">Record your verification video</h3>
+      <div class="challenge"><span class="small muted">Your random challenge for this order</span><br><b>{{ tx.challenge }}</b></div>
+      <p class="muted small">Film the actual device for at least 15 seconds: front, back, screen on, and the serial number or IMEI (Settings → General → About). Do the challenge in one continuous shot.</p>
+      {% for e in tx.events if e.kind=='ai' and 'attention' in e.message %}{% if loop.last %}<div class="diff">{{ e.message }}</div>{% endif %}{% endfor %}
+      <form method="post" enctype="multipart/form-data" action="{{ url_for('orders.seller_video', ref=tx.ref) }}" data-busy>{{ csrf() }}
+        <label class="upload"><input type="file" name="video" accept="video/*" capture="environment" required>{{ icon('video') }}<b>Choose or record video</b><span class="pick">MP4, MOV or WebM</span></label><video class="ev preview mt-s" controls hidden></video>
+        <button class="btn btn-primary mt" type="submit">Upload for verification</button></form></div>
+  {% endif %}
+
+  {% if me=='seller' and tx.status=='READY_TO_SHIP' %}
+    <div class="glass pad stack"><h3 class="h3">Ship the item</h3><p class="muted small">Seal the parcel after filming. Photograph the sealed package with its label.</p>
+      <form method="post" enctype="multipart/form-data" action="{{ url_for('orders.ship', ref=tx.ref) }}" data-busy>{{ csrf() }}
+        <div class="form-grid"><div class="field"><label>Courier</label><input type="text" name="courier" required placeholder="DHL, UPS, GIG…"></div><div class="field"><label>Tracking number</label><input type="text" name="tracking" required></div>
+        <div class="field"><label>Package / seal ID (optional)</label><input type="text" name="package_id"></div><div class="field"><label>Dispatch photo (optional)</label><input type="file" name="photo" accept="image/*"></div></div>
+        <label class="check"><input type="checkbox" name="sealed" checked> The parcel is sealed with tamper-evident tape</label>
+        <button class="btn btn-primary mt" type="submit">Mark as shipped</button></form></div>
+  {% endif %}
+
+  {% if tx.status=='SHIPPED' %}
+    <div class="glass pad stack"><h3 class="h3">In transit {{ '· ' ~ tx.shipping.courier ~ ' ' ~ tx.shipping.tracking if tx.shipping }}</h3>
+      <p class="hint">Omega doesn't have a live courier feed. The tracking number was entered by the seller; delivery is confirmed by the buyer.</p>
+      {% if me in ('buyer','admin') %}<form method="post" enctype="multipart/form-data" action="{{ url_for('orders.delivered', ref=tx.ref) }}" data-busy>{{ csrf() }}
+        <p class="muted small">Has it arrived? Confirming starts your inspection window.</p>
+        <label class="check"><input type="checkbox" name="sealed" checked> The seal was intact when it arrived</label>
+        <div class="field mt-s"><label>Photo of the parcel as received (optional)</label><input type="file" name="photo" accept="image/*"></div>
+        <button class="btn btn-primary" type="submit">{{ icon('package-check') }} Confirm delivery</button></form>{% endif %}</div>
+  {% endif %}
+
+  {% if me=='buyer' and (tx.status=='BUYER_INSPECTION' or (tx.status=='NEEDS_MORE_EVIDENCE' and tx.needs_evidence_from=='buyer')) and not pending %}
+    <div class="glass pad stack"><h3 class="h3">Film the unboxing</h3>
+      {% if tx.inspection_deadline %}<p class="small"><span class="badge b-warn">{{ icon('timer') }} Window ends {{ tx.inspection_deadline|dt }} UTC</span></p>{% endif %}
+      <p class="muted small">One continuous video: the sealed package, opening it, the device front and back, screen on, and the serial number or IMEI.</p>
+      {% for e in tx.events if e.kind=='ai' %}{% if loop.last and tx.status=='NEEDS_MORE_EVIDENCE' %}<div class="diff">{{ e.message }}</div>{% endif %}{% endfor %}
+      <form method="post" enctype="multipart/form-data" action="{{ url_for('orders.inspection', ref=tx.ref) }}" data-busy>{{ csrf() }}
+        <label class="upload"><input type="file" name="video" accept="video/*" capture="environment" required>{{ icon('camera') }}<b>Choose or record video</b><span class="pick">MP4, MOV or WebM</span></label><video class="ev preview mt-s" controls hidden></video>
+        <button class="btn btn-primary mt" type="submit">Upload inspection video</button></form></div>
+  {% endif %}
+
+  {% if me=='buyer' and tx.status in ('AWAITING_RELEASE','MANUAL_REVIEW','AI_VERIFICATION') and not tx.buyer_confirmed %}
+    <div class="glass pad stack"><h3 class="h3">{{ 'Everything matches — confirm to pay the seller' if tx.status=='AWAITING_RELEASE' else 'Confirm the item' }}</h3>
+      <p class="muted small">By confirming you're saying the item you received matches the agreement. {{ 'This releases the payment to the seller.' if tx.status=='AWAITING_RELEASE' else 'Payment still waits for Omega’s review.' }}</p>
+      <form method="post" action="{{ url_for('orders.confirm', ref=tx.ref) }}">{{ csrf() }}<button class="btn btn-primary shine">{{ icon('circle-check-big') }} The item matches{{ ' — release payment' if tx.status=='AWAITING_RELEASE' }}</button></form></div>
+  {% endif %}
+
+  {% if me=='buyer' and tx.status=='COMPLETED' and not review %}
+    <div class="glass pad"><h3 class="h3">Rate this seller</h3><form method="post" action="{{ url_for('orders.review', ref=tx.ref) }}">{{ csrf() }}
+      <div class="stars">{% for n in [5,4,3,2,1] %}<input type="radio" id="s{{ n }}" name="stars" value="{{ n }}" {{ 'checked' if n==5 }}><label for="s{{ n }}">★</label>{% endfor %}</div>
+      <div class="field mt-s"><input type="text" name="comment" maxlength="400" placeholder="How was it?"></div><button class="btn btn-primary btn-sm">Post review</button></form></div>
+  {% elif review %}<div class="glass pad-s"><b>{{ '★'*review.stars }}</b> <span class="muted">{{ review.comment }}</span></div>{% endif %}
+
+  {# ---------------- ADMIN ---------------- #}
+  {% if me=='admin' and tx.status not in ('COMPLETED','REFUNDED','CANCELLED','RESOLVED') %}
+    <div class="glass pad stack"><h3 class="h3">Admin review</h3><p class="muted small">Your decision is recorded in the audit log. Releasing early overrides failed checks.</p>
+      <form method="post" action="{{ url_for('admin.order_action', ref=tx.ref) }}" class="stack">{{ csrf() }}<div class="field" style="margin:0"><label>Note (shown in the audit log)</label><input type="text" name="note" placeholder="Reason for decision"></div>
+        <div class="row"><button class="btn btn-ok" name="action" value="approve_release" {{ 'disabled' if tx.status not in ('MANUAL_REVIEW','AWAITING_RELEASE','DISPUTED') }}>{{ icon('badge-check') }} Approve & release</button>
+        <button class="btn btn-danger" name="action" value="refund" {{ 'disabled' if tx.status in ('SHIPPED',) and False }}>{{ icon('undo-2') }} Refund buyer</button>
+        <button class="btn" name="action" value="manual_review" {{ 'disabled' if not tx.can_go('MANUAL_REVIEW') }}>Send to manual review</button></div>
+        <div class="row"><select name="from" style="width:auto"><option value="buyer">Ask buyer</option><option value="seller">Ask seller</option></select><button class="btn btn-sm" name="action" value="request_evidence">Request more evidence</button></div></form></div>
+  {% endif %}
+
+  {# ---------------- AI RESULTS ---------------- #}
+  {% if cmp %}
+  <div class="glass pad stack">
+    <div class="row between"><h3 class="h3">AI comparison</h3><span class="badge {{ 'b-ok' if cmp.recommendation=='ELIGIBLE_FOR_REVIEW' else 'b-bad' if cmp.recommendation=='DISCREPANCY_FOUND' else 'b-warn' }}">{{ cmp.recommendation.replace('_',' ').title() }}</span></div>
+    <div class="row"><span class="chip">Confidence {{ '%.0f'|format(cmp.confidence*100) }}%</span>{{ engine('fire', cmp.engines.fire.ok if cmp.engines else none, false) }}{{ engine('water', cmp.engines.water.ok if cmp.engines else none, false) }}{% if cmp.recommendation != 'AI_UNAVAILABLE' %}<span class="chip">Model {{ '✓' if cmp.seller_video.model_match else '✗' }}</span><span class="chip">Colour {{ '✓' if cmp.seller_video.colour_match else '✗' }}</span>{% endif %}</div>
+    {% if cmp.recommendation == 'AI_UNAVAILABLE' %}{% for i in cmp.unavailable %}<div class="diff" style="background:rgba(255,200,87,.12);border-color:rgba(255,200,87,.5)">{{ engine(i.engine, false) }} {{ i.reason }}</div>{% endfor %}{% endif %}
+    <p class="muted">{{ cmp.explanation }}</p>
+    {% for d in cmp.discrepancies %}<div class="diff">{{ icon('octagon-alert') }} {{ d }}</div>{% endfor %}
+    {% for m in cmp.missing_evidence %}<div class="diff" style="background:rgba(255,200,87,.12);border-color:rgba(255,200,87,.5)">{{ icon('circle-help') }} Missing: {{ m }}</div>{% endfor %}
+    {% if cmp.recommendation == 'ELIGIBLE_FOR_REVIEW' and not cmp.discrepancies and not cmp.missing_evidence %}<div class="okbox">{{ icon('check') }} No differences found between the seller and buyer evidence.</div>{% endif %}
+    {% for n in cmp.notes %}<p class="hint" style="margin:2px 0">• {{ n }}</p>{% endfor %}
+    <p class="hint">Confidence describes how well the footage supports this analysis, not the chance a seller is honest. Video can't prove every hardware detail.</p>
+  </div>
+  {% endif %}
+
+  {% for r in (sv, bv) if r %}
+  <div class="glass pad stack"><h3 class="h3">{{ 'Seller' if r.kind=='seller_video' else 'Buyer' }} video reading</h3>
+    {% set rd = r.report.reading %}<dl class="kv"><dt>Device visible</dt><dd>{{ 'Yes' if rd.product_visible else 'No' }}</dd><dt>Model / colour</dt><dd>{{ rd.model or '—' }} / {{ rd.colour or '—' }}</dd><dt>Condition</dt><dd>{{ rd.condition or '—' }}</dd><dt>Identifiers read</dt><dd>{{ rd.identifiers|join(', ') or 'none read' }}</dd>{% if r.kind=='seller_video' and rd.challenge_satisfied is not none %}<dt>Challenge shown</dt><dd>{{ 'Yes' if rd.challenge_satisfied else 'No' }}</dd>{% endif %}<dt>Read by</dt><dd>{{ engine('fire', none, false) }}{% if rd.engine_model %} <span class="small muted">{{ rd.engine_model }}</span>{% endif %}</dd></dl>
+    {% if rd.notes %}<p class="hint">{{ rd.notes }}</p>{% endif %}
+    {% for f in r.report.metadata.flags %}<p class="hint" style="margin:0">⚑ {{ f }}</p>{% endfor %}</div>
+  {% endfor %}
+
+  {# ---------------- EVIDENCE ---------------- #}
+  <div class="glass pad stack"><h3 class="h3">Evidence vault</h3>
+    {% for e in tx.evidence %}
+      <div style="padding-bottom:14px;border-bottom:1px solid var(--stroke)"><div class="row between"><b>{{ e.kind.replace('_',' ').capitalize() }}</b><span class="small muted">{{ e.uploader.name if e.uploader }} · {{ e.created_at|dt }}</span></div>
+        {% if e.media=='video' %}<video class="ev mt-s" controls preload="metadata" src="{{ url_for('market.evidence_file', eid=e.id, t=tokens[e.id]) }}"></video>
+          {% if e.meta and e.meta.frames %}<div class="frames mt-s">{% for f in e.meta.frames[:6] %}<img loading="lazy" src="{{ url_for('market.evidence_frame', eid=e.id, i=loop.index0) }}" alt="Frame {{ loop.index }}">{% endfor %}</div>{% endif %}
+          {% if e.meta %}<p class="hint">{{ e.meta.duration_s }}s · {{ e.meta.width }}×{{ e.meta.height }} · {{ e.meta.size_mb }} MB · analysis: {{ e.analysis_status }}</p>{% endif %}
+        {% else %}<img class="mt-s" style="border-radius:14px;max-height:260px" src="{{ url_for('market.evidence_file', eid=e.id, t=tokens[e.id]) }}" alt="{{ e.kind }}">{% endif %}
+        <p class="hint" style="word-break:break-all">SHA-256 {{ e.sha256 }}</p></div>
+    {% else %}<p class="muted">No evidence uploaded yet.</p>{% endfor %}</div>
+
+  {# ---------------- DISPUTES ---------------- #}
+  {% for d in tx.disputes %}
+  <div class="glass pad stack"><div class="row between"><h3 class="h3">Case #{{ d.id }} · {{ d.reason.replace('_',' ') }}</h3><span class="badge {{ 'b-ok' if d.status=='resolved' else 'b-bad' }}">{{ d.status }}</span></div>
+    <p class="muted">{{ d.description }}</p><p class="small muted">Opened by {{ d.opened_by.name }} · {{ d.created_at|dt }}</p>
+    {% if d.ai_report %}<details><summary class="btn btn-sm">{{ icon('sparkles') }} Neutral AI case summary</summary>
+      <dl class="kv mt-s"><dt>Matches</dt><dd>{{ d.ai_report.what_matches|join(', ') or '—' }}</dd><dt>Doesn't match</dt><dd>{{ d.ai_report.what_does_not_match|join('; ') or '—' }}</dd><dt>Uncertain / missing</dt><dd>{{ d.ai_report.uncertain_or_missing|join('; ') or '—' }}</dd><dt>Risk signals</dt><dd>{{ d.ai_report.risk_reasons|join('; ') or '—' }}</dd><dt>Suggested step</dt><dd>{{ d.ai_report.suggested_next_step }}</dd></dl></details>{% endif %}
+    {% if d.status=='resolved' %}<div class="okbox"><b>Resolution:</b> {{ d.resolution.replace('_',' ') }}{% if d.admin_note %} — {{ d.admin_note }}{% endif %}</div>{% endif %}
+    {% if d.status!='resolved' and me in ('buyer','seller') %}<form method="post" enctype="multipart/form-data" action="{{ url_for('orders.dispute_evidence', ref=tx.ref) }}">{{ csrf() }}
+      <div class="field"><label>Add a note or evidence</label><input type="text" name="note" placeholder="Anything the reviewer should know"></div><input type="file" name="files" multiple accept="image/*,video/*" class="small"><br><button class="btn btn-sm mt-s">Add to case</button></form>{% endif %}
+    {% if d.status!='resolved' and me=='admin' %}<form method="post" action="{{ url_for('admin.resolve_dispute', did=d.id) }}" class="stack">{{ csrf() }}<div class="field" style="margin:0"><label>Resolution note</label><input type="text" name="note"></div>
+      <div class="row"><button class="btn btn-danger" name="resolution" value="refund_buyer">Refund buyer</button><button class="btn btn-ok" name="resolution" value="release_seller">Release to seller</button><button class="btn" name="resolution" value="close">Close, no payment action</button></div></form>{% endif %}</div>
+  {% endfor %}
+
+  {% if me in ('buyer','seller') and not tx.open_dispute() and tx.status in ('SHIPPED','BUYER_INSPECTION','AI_VERIFICATION','AWAITING_RELEASE','NEEDS_MORE_EVIDENCE','MANUAL_REVIEW') %}
+  <details class="glass pad"><summary class="h3" style="cursor:pointer">{{ icon('flag') }} Report a problem</summary>
+    <form method="post" enctype="multipart/form-data" action="{{ url_for('orders.problem', ref=tx.ref) }}" class="mt stack" data-busy>{{ csrf() }}
+      <div class="field"><label>What's wrong?</label><select name="reason"><option value="not_as_described">Not as described</option><option value="damaged">Damaged</option><option value="wrong_item">Wrong or swapped item</option><option value="missing_parts">Missing parts</option><option value="payment_issue">Payment issue</option><option value="other">Something else</option></select></div>
+      <div class="field"><label>Details</label><textarea name="description" required minlength="15"></textarea></div><input type="file" name="files" multiple accept="image/*,video/*" class="small">
+      <button class="btn btn-danger" type="submit">Open case — hold the payment</button></form></details>
+  {% endif %}
+  {% if me=='buyer' and tx.status in ('PAYMENT_CAPTURED','SELLER_VERIFICATION','READY_TO_SHIP','NEEDS_MORE_EVIDENCE','SHIPPED','BUYER_INSPECTION','AI_VERIFICATION','AWAITING_RELEASE','MANUAL_REVIEW') and not tx.open_dispute() %}
+  <form method="post" action="{{ url_for('orders.refund', ref=tx.ref) }}" class="no-print">{{ csrf() }}<button class="btn btn-sm btn-danger">{{ icon('undo-2') }} {{ 'Cancel and refund' if tx.status in ('PAYMENT_CAPTURED','SELLER_VERIFICATION','READY_TO_SHIP') else 'Request a refund' }}</button></form>
+  {% endif %}
+</div>
+
+<div class="stack">
+  <div class="glass pad"><h3 class="h3">Transaction progress</h3><div class="mt-s">{{ stage_timeline(stages) }}</div></div>
+  <div class="glass pad"><h3 class="h3">Release checks</h3><p class="small muted">All must pass before Omega's backend will pay the seller.</p>
+    <ul class="checklist mt-s">{% for c in verdict.checks %}<li class="{{ 'ck-ok' if c.ok else 'ck-no' }}">{{ icon('circle-check' if c.ok else 'circle', 'ic') }}<span>{{ c.label }}</span>{% if c.detail %}<small>{{ c.detail }}</small>{% endif %}</li>{% endfor %}</ul></div>
+  <div class="glass pad"><h3 class="h3">Agreement</h3>
+    <dl class="kv mt-s">{% for k,v in tx.agreement.specs.items() if v and k!='serial' %}<dt>{{ k|capitalize }}</dt><dd>{{ v }}</dd>{% endfor %}</dl>
+    <p class="small muted mt-s">{{ tx.agreement.terms.release }}</p>
+    {% for a in tx.agreement.acks %}<p class="small" style="margin:4px 0">{{ icon('signature') }} {{ a.role|capitalize }} <b>{{ a.user.name }}</b> accepted · {{ a.created_at|dt }}</p>{% endfor %}
+    {% if not tx.agreement.acked_by('seller') %}<p class="small muted">Waiting for the seller to confirm.</p>{% endif %}</div>
+  <div class="glass pad"><h3 class="h3">Payment</h3>
+    {% if tx.payment %}<dl class="kv mt-s"><dt>Provider</dt><dd>{{ tx.payment.provider }}</dd><dt>Status</dt><dd>{{ tx.payment.status }}</dd><dt>Order</dt><dd>{{ tx.payment.order_id }}</dd>{% if tx.payment.capture_id %}<dt>Capture</dt><dd>{{ tx.payment.capture_id }}</dd>{% endif %}
+      {% if tx.disbursement %}<dt>Payout</dt><dd>{{ tx.disbursement.status }} · {{ tx.disbursement.amount|money }} · {{ tx.disbursement.payout_id }}</dd>{% endif %}</dl>{% endif %}</div>
+  {% if tx.shipping %}<div class="glass pad"><h3 class="h3">Shipping</h3><p class="small muted">{{ tx.shipping.courier }} · {{ tx.shipping.tracking }}{% if tx.shipping.package_id %} · seal {{ tx.shipping.package_id }}{% endif %}</p>
+    <ul class="timeline mt-s">{% for e in tx.shipping.courier_events|reverse %}<li>{{ e.event }}<small>{{ e.at[:16].replace('T',' ') }} UTC</small></li>{% endfor %}</ul></div>{% endif %}
+  {% if tx.risk_reasons %}<div class="glass pad"><h3 class="h3">Risk signals</h3><ul class="reasons">{% for r in tx.risk_reasons if r.points != 0 %}<li class="sev-{{ r.severity }}">{{ icon('badge-check' if r.severity=='good' else 'triangle-alert', 'ic') }}<span>{{ r.label }}</span><span class="pt">{{ '%+d'|format(r.points) }}</span></li>{% endfor %}</ul></div>{% endif %}
+  <div class="glass pad"><h3 class="h3">Timeline</h3><ul class="timeline mt-s">{% for e in tx.events|reverse %}<li class="k-{{ e.kind }}">{{ e.message }}<small>{{ e.actor }} · {{ e.created_at|dt }}</small></li>{% endfor %}</ul></div>
+</div>
+</div>
+</div>
+{% endblock %}

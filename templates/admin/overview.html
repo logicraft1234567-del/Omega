@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% from '_macros.html' import status, icon, engine with context %}{% block title %}Admin · Omega{% endblock %}
+{% block content %}<h1 class="h2">Platform control</h1><div class="mt">{% include 'admin/_nav.html' %}</div>
+<div class="grid g4">
+{% for n,l in [(s.users,'users ('~s.sellers~' sellers)'),(s.listings,'live listings'),(s.active,'active transactions'),(s.review,'awaiting human review'),(s.disputes,'open disputes'),(s.high_risk,'high-risk transactions'),(s.flagged,'flagged listings'),(s.tx,'total transactions')] %}<div class="glass stat"><div class="num grad-text">{{ n }}</div><p>{{ l }}</p></div>{% endfor %}</div>
+<div class="grid g4 mt"><div class="glass stat"><div class="num grad-text">{{ s.held|money }}</div><p>held in protection</p></div><div class="glass stat"><div class="num grad-text">{{ s.released|money }}</div><p>released to sellers</p></div><div class="glass stat"><div class="num grad-text">{{ s.refunded|money }}</div><p>refunded to buyers</p></div><div class="glass stat"><div class="num grad-text">{{ '—' if s.success is none else s.success~'%' }}</div><p>transactions completed successfully</p></div></div>
+<div class="split mt"><div class="glass pad"><h3 class="h3">Recent activity</h3><div class="table-wrap mt-s"><table class="o">{% for t in recent %}<tr><td class="mono"><a href="{{ url_for('orders.detail', ref=t.ref) }}">{{ t.ref }}</a></td><td>{{ t.product.title[:34] }}</td><td>{{ status(t.status) }}</td><td class="muted small">{{ t.updated_at|ago }}</td></tr>{% endfor %}</table></div></div>
+<div class="stack"><form method="post" action="{{ url_for('admin.settings') }}" class="glass pad">{% set c=cfg %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><h3 class="h3">Risk configuration</h3>
+<div class="field mt-s"><label>Minimum AI confidence (0.5–0.99)</label><input type="number" step="0.01" name="min_confidence" value="{{ c.min_confidence }}"></div><div class="field"><label>Maximum transaction risk score</label><input type="number" name="max_risk" value="{{ c.max_risk }}"></div><div class="field"><label>Inspection window (hours)</label><input type="number" name="inspection_hours" value="{{ c.inspection_hours }}"></div><button class="btn btn-primary btn-sm">Save thresholds</button></form>
+<div class="glass pad"><h3 class="h3">AI engines</h3>
+{% for k in ('fire','water') %}{% set e = ai_status[k] %}<div class="engrow">{{ engine(k, e.ok) }}
+  {% if e.ok %}<p class="small muted" style="margin:6px 0 0">Reachable · model <b>{{ e.model }}</b></p>
+  {% else %}<p class="small" style="margin:6px 0 0;color:var(--warn)">{{ icon('triangle-alert') }} Not reachable: {{ e.reason }}</p>{% endif %}</div>{% endfor %}
+<p class="small muted mt-s">{{ s.awaiting_ai }} order(s) waiting on the AI. <a href="{{ url_for('admin.overview', recheck=1) }}">Re-check now</a></p>
+<p class="small muted">Payments: <b>{{ payment_label }}</b></p>
+<form method="post" action="{{ url_for('admin.deadlines') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm">{{ icon('timer') }} Run deadline sweep</button></form></div></div></div>{% endblock %}

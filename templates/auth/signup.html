@@ -1,0 +1,27 @@
+{% extends 'auth/_layout.html' %}{% block title %}Sign up · Omega{% endblock %}
+{% block form %}
+<h1>Create your account</h1><p class="sub">Free to join. You only pay when you buy.</p>
+{{ alerts() }}
+<form method="post" data-busy data-validate novalidate class="{{ 'show-seller' if role=='seller' }}" data-role-form>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% if nxt %}<input type="hidden" name="next" value="{{ nxt }}">{% endif %}
+  <div class="role-pick" role="radiogroup" aria-label="I want to">
+    <label><input type="radio" name="role" value="buyer" {{ 'checked' if role!='seller' }} data-role><span class="rp-in"><span class="rp-ic">{{ icon('shopping-bag') }}</span><span class="rp-t"><b>Buy</b><small>Pay safely for used phones and laptops</small></span></span></label>
+    <label><input type="radio" name="role" value="seller" {{ 'checked' if role=='seller' }} data-role><span class="rp-in"><span class="rp-ic">{{ icon('store') }}</span><span class="rp-t"><b>Sell</b><small>List items and get paid with proof</small></span></span></label>
+  </div>
+  <div class="field"><div class="fl">{{ icon('user-round') }}<input id="name" type="text" name="name" value="{{ form.get('name','') }}" placeholder=" " required autocomplete="name" maxlength="100" aria-describedby="e-name"><label for="name">Full name</label></div><p class="fe" id="e-name" data-for="name" hidden></p></div>
+  <div class="field"><div class="fl">{{ icon('mail') }}<input id="email" type="email" name="email" value="{{ form.get('email','') }}" placeholder=" " required autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" aria-describedby="e-email"><label for="email">Email address</label></div><p class="fe" id="e-email" data-for="email" hidden></p></div>
+  <div class="field" data-new-password><div class="fl">{{ icon('lock-keyhole') }}<input id="pw" type="password" name="password" placeholder=" " minlength="8" required autocomplete="new-password" data-strength-input aria-describedby="e-password"><label for="pw">Password (8+ characters)</label>
+    <button class="eye" type="button" data-eye aria-label="Show password" aria-pressed="false">{{ icon('eye') }}</button></div>
+    <div class="strength" data-strength data-s="0" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="strength-l" data-strength-label aria-live="polite"></div>
+    <p class="fe caps" data-caps hidden>{{ icon('arrow-big-up') }} Caps Lock is on</p><p class="fe" id="e-password" data-for="password" hidden></p></div>
+  <div class="seller-only" data-show-role="seller"><div class="inner">
+    <div class="field"><div class="fl">{{ icon('wallet') }}<input id="pp" type="email" name="paypal_email" value="{{ form.get('paypal_email','') }}" placeholder=" " autocomplete="off" inputmode="email" autocapitalize="off" spellcheck="false" aria-describedby="e-paypal"><label for="pp">PayPal email (where you get paid)</label></div><p class="fe" id="e-paypal" data-for="paypal_email" hidden></p>
+      <p class="hint-s">Optional now. You can add it later in Settings, but you need it before your first payout.</p></div>
+  </div></div>
+  <details class="more" {{ 'open' if form.get('location') or form.get('phone') }}><summary>More details (optional) {{ icon('chevron-down') }}</summary><div class="in">
+    <div class="field"><div class="fl">{{ icon('map-pin') }}<input id="loc" type="text" name="location" value="{{ form.get('location','') }}" placeholder=" " autocomplete="address-level2" maxlength="120"><label for="loc">City, country</label></div></div>
+    <div class="field"><div class="fl">{{ icon('phone') }}<input id="ph" type="tel" name="phone" value="{{ form.get('phone','') }}" placeholder=" " autocomplete="tel" inputmode="tel" maxlength="40"><label for="ph">Phone</label></div></div></div></details>
+  <button class="btn btn-primary btn-lg btn-block" type="submit">Create account {{ icon('arrow-right') }}</button>
+</form>
+<p class="auth-switch">Already registered? <a href="{{ url_for('auth.login', next=nxt or None) }}">Log in</a></p>
+{% endblock %}

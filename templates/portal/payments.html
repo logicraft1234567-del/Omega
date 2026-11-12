@@ -1,0 +1,29 @@
+{% extends 'base.html' %}{% from '_macros.html' import status, icon, kpi, empty, thumb with context %}{% block title %}Payments · Omega{% endblock %}
+{% block content %}
+<div class="ph"><div><h1>Payments</h1><p>{{ 'Payments you have made and where each one stands.' if current_user.role=='buyer' else 'Funds held for your orders and payouts sent to you.' if current_user.role=='seller' else 'Payment activity across the platform.' }}</p></div></div>
+<div class="status-note {{ info[1] }}" style="margin-bottom:20px">{{ icon('credit-card') }}<div><b>Payment provider: {{ info[0] }}</b><p>{{ info[2] }}{% if webhook_ready is not none %} Webhook signature verification is {{ 'configured' if webhook_ready else 'NOT configured (PAYPAL_WEBHOOK_ID is missing), so provider webhooks are rejected' }}.{% endif %}{% if current_user.role=='seller' and mode in ('paypal_standard','simulated') and not current_user.paypal_email %} <a href="{{ url_for('market.profile') }}"><b>Add your PayPal email</b></a> to receive payouts.{% endif %}</p></div></div>
+<div class="kpis">
+  {% if current_user.role == 'buyer' %}
+    {{ kpi('Held by Omega', summary.held|money, 'Not yet released to sellers', 'lock-keyhole') }}
+    {{ kpi('Paid in', summary.paid_in|money, 'Captured payments, before any refund', 'arrow-down-to-line') }}
+    {{ kpi('Refunded', summary.refunded|money, None, 'undo-2') }}
+    {{ kpi('Payments', txs|length, None, 'receipt') }}
+  {% else %}
+    {{ kpi('Awaiting release', summary.held|money, 'Captured and held by Omega', 'lock-keyhole') }}
+    {{ kpi('Paid out', summary.released|money, 'Payouts marked sent', 'wallet') }}
+    {{ kpi('Refunded', summary.refunded|money, 'Returned to buyers', 'undo-2') }}
+    {{ kpi('Payments', txs|length, None, 'receipt') }}
+  {% endif %}
+</div>
+<section class="glass panel flush sect"><div class="panel-h"><h2>Payment activity</h2></div>
+{% if txs %}<table class="dt"><thead><tr><th>Item</th><th>Amount</th><th>Payment</th><th>Payout</th><th>Provider reference</th><th>Updated</th><th></th></tr></thead><tbody>
+{% for t in txs %}<tr>
+  <td class="prodcell"><div class="prod">{{ thumb(t.product) }}<div style="min-width:0"><b>{{ t.product.title }}</b><small class="mono">{{ t.ref }}</small></div></div></td>
+  <td data-label="Amount" class="num">{{ t.amount|money }} <small class="faint">{{ t.currency }}</small></td>
+  <td data-label="Payment"><span class="badge {{ {'captured':'b-ok','refunded':'b-mute','failed':'b-bad'}.get(t.payment.status,'b-warn') }}">{{ t.payment.status|capitalize }}</span></td>
+  <td data-label="Payout">{% if t.disbursement %}<span class="badge {{ 'b-ok' if t.disbursement.status=='sent' else 'b-bad' if t.disbursement.status=='failed' else 'b-warn' }}">{{ t.disbursement.status|capitalize }} · {{ t.disbursement.amount|money }}</span>{% else %}<span class="faint">{{ 'Not released' if t.payment.status=='captured' else '—' }}</span>{% endif %}</td>
+  <td data-label="Reference" class="small mono" style="word-break:break-all">{{ t.payment.capture_id or t.payment.order_id }}</td>
+  <td data-label="Updated" class="small muted">{{ t.payment.updated_at|ago }}</td>
+  <td data-label=""><a class="btn btn-sm" href="{{ url_for('orders.detail', ref=t.ref) }}">Open</a></td></tr>{% endfor %}</tbody></table>
+{% else %}{{ empty('wallet', 'Your payment activity will appear here', 'Payments and payouts show up once a purchase has been started.' if current_user.role=='buyer' else 'Held funds and payouts show up once a buyer pays for one of your listings.') }}{% endif %}</section>
+{% endblock %}

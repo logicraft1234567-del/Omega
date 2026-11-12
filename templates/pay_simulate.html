@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% from '_macros.html' import icon with context %}{% block title %}Sandbox payment · Omega{% endblock %}
+{% block content %}
+<div class="glass pad pay-card stack" style="text-align:center"><span class="badge b-warn" style="margin:auto">Sandbox simulator — no real money</span>
+  <h1 class="h2" style="font-size:1.6rem">Approve payment</h1><div class="price" style="font-size:2.4rem">{{ tx.amount|money }}</div><p class="muted">{{ tx.product.title }}<br>Order {{ tx.ref }}</p>
+  <p class="small muted">With PayPal credentials configured, this step is the real PayPal sandbox approval page.</p>
+  <form method="post" class="row" style="justify-content:center"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-primary" name="action" value="approve">{{ icon('check') }} Approve and pay</button><button class="btn" name="action" value="cancel">Cancel</button></form></div>
+{% endblock %}

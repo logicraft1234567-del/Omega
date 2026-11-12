@@ -1,0 +1,1 @@
+<div class="tabs">{% for ep,label in [('admin.overview','Overview'),('admin.orders','Orders'),('admin.disputes','Disputes'),('admin.fraud','Fraud alerts'),('admin.payments','Payments'),('admin.products','Listings'),('admin.users','Users'),('admin.audit_log','Audit log')] %}<a href="{{ url_for(ep) }}" class="{{ 'on' if request.endpoint==ep }}">{{ label }}</a>{% endfor %}</div>

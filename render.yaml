@@ -1,0 +1,36 @@
+# One-click deploy on Render (a hackathon sponsor): New + > Blueprint > pick this repo.
+# Render asks you for every variable marked sync:false. Nothing secret is stored in the repo.
+services:
+  - type: web
+    name: omega
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 2 --timeout 120
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase: {name: omega-db, property: connectionString}
+      - key: COOKIE_SECURE
+        value: "1"
+      - key: PAYPAL_ENV
+        value: sandbox
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: BASE_URL
+        sync: false          # e.g. https://omega.onrender.com (your Render URL, no trailing slash)
+databases:
+  - name: omega-db
+    plan: free

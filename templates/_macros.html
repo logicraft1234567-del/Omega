@@ -1,0 +1,106 @@
+{% macro icon(name, cls='', style='') %}{{ icon_svg(name, cls, style) }}{% endmacro %}
+
+{% macro status(s) -%}
+{%- set tone = {'COMPLETED':'b-ok','AWAITING_RELEASE':'b-ok','PAYMENT_CAPTURED':'b-info','SELLER_VERIFICATION':'b-info','READY_TO_SHIP':'b-info','SHIPPED':'b-info','DELIVERED':'b-info','BUYER_INSPECTION':'b-info','AI_VERIFICATION':'b-info','RELEASE_PROCESSING':'b-info','NEEDS_MORE_EVIDENCE':'b-warn','MANUAL_REVIEW':'b-warn','REFUND_PENDING':'b-warn','RELEASE_PENDING':'b-warn','DISPUTED':'b-bad','REFUNDED':'b-mute','RESOLVED':'b-mute','CANCELLED':'b-mute','AWAITING_PAYMENT':'b-warn','CREATED':'b-mute'}.get(s,'b-mute') -%}
+<span class="badge {{ tone }}">{{ STATUS_LABELS.get(s, s) }}</span>
+{%- endmacro %}
+
+{% macro risk_badge(level, score) -%}
+<span class="badge {{ {'low':'b-ok','medium':'b-warn','high':'b-bad'}[level] }}">{{ icon('shield-check' if level=='low' else 'shield-alert', '', 'width:14px;height:14px') }} {{ {'low':'Low risk','medium':'Medium risk','high':'High risk'}[level] }} · {{ score }}</span>
+{%- endmacro %}
+
+{% macro risk_panel(rep, title='AI risk report') %}
+<div class="glass pad">
+  <div class="row between"><h3 class="h3">{{ title }}</h3>{{ risk_badge(rep.level, rep.score) }}</div>
+  <div class="meter m-{{ rep.level }} mt-s"><i style="width:{{ rep.score }}%"></i></div>
+  <ul class="reasons">
+    {% for r in rep.reasons %}
+    <li class="sev-{{ r.severity }}">{{ icon('badge-check' if r.severity=='good' else 'octagon-alert' if r.severity=='critical' else 'triangle-alert', 'ic') }}<span>{{ r.label }}</span><span class="pt">{{ '%+d'|format(r.points) }}</span></li>
+    {% else %}<li class="sev-good">{{ icon('badge-check', 'ic') }}<span>No risk signals found.</span></li>{% endfor %}
+  </ul>
+  {% if rep.missing %}<p class="small muted" style="margin:14px 0 4px"><b>Missing evidence</b></p><ul class="reasons">{% for m in rep.missing %}<li class="sev-warn">{{ icon('circle-help', 'ic') }}<span>{{ m }}</span></li>{% endfor %}</ul>{% endif %}
+  <p class="hint mt-s">Scores are transparent rule-based signals plus an anomaly model. They guide review and never pay out money on their own.</p>
+</div>
+{% endmacro %}
+
+{% macro pcard(p) %}
+{% set img = p.cover %}
+<a class="glass lift pcard" href="{{ url_for('market.product', pid=p.id) }}">
+  <div class="img">
+    <div class="top-badges"><span class="chip">{{ p.condition }}</span>{{ risk_badge(p.risk_report.level if p.risk_report else 'low', p.risk_score or 0) }}</div>
+    <img src="{{ media(img) }}" alt="{{ p.title }}" class="{{ '' if (img or '').startswith('static:') or not img else 'photo' }}" loading="lazy">
+  </div>
+  <div class="body">
+    <b>{{ p.title }}</b>
+    <div class="row between"><span class="price">{{ p.price|money }}</span><span class="small muted">{{ p.seller.name }}{% if p.seller.id_verified %} {{ icon('badge-check', '', 'width:14px;height:14px;color:var(--cyan);vertical-align:-2px') }}{% endif %}</span></div>
+  </div>
+</a>
+{% endmacro %}
+
+{# Fire = video AI (Gemini, flame). Water = image AI (Groq, droplets). ok: true = reachable, false = down, none = not shown #}
+{% macro engine(key, ok=none, detail=true) -%}
+{%- set e = {'fire': {'n':'Fire','i':'flame','k':'video AI','p':'Gemini'}, 'water': {'n':'Water','i':'droplets','k':'image AI','p':'Groq'}}[key] -%}
+<span class="badge eng eng-{{ key }}">{{ icon(e.i, '', 'width:14px;height:14px') }} {{ e.n }}{% if detail %}<span class="eng-k"> · {{ e.k }} · {{ e.p }}</span>{% endif %}{% if ok is not none %}<span class="eng-dot {{ 'on' if ok else 'off' }}" title="{{ 'reachable' if ok else 'not reachable' }}"></span>{% endif %}</span>
+{%- endmacro %}
+
+
+{# ---------- dashboard building blocks ---------- #}
+{% macro kpi(label, value, cap, ic, tone='') %}
+<div class="glass kpi {{ tone }}"><div class="k-top"><span>{{ label }}</span><span class="k-ic">{{ icon(ic) }}</span></div><div class="k-num">{{ value }}</div>{% if cap %}<div class="k-cap">{{ cap }}</div>{% endif %}</div>
+{% endmacro %}
+
+{% macro empty(ic, title, text, href=none, cta=none) %}
+<div class="empty-s"><span class="e-ic">{{ icon(ic) }}</span><h3>{{ title }}</h3><p>{{ text }}</p>{% if href %}<a class="btn btn-primary btn-sm" href="{{ href }}" style="margin-top:6px">{{ cta }}</a>{% endif %}</div>
+{% endmacro %}
+
+{% macro pager(pg) %}
+{% if pg.total > 0 %}
+<div class="pager"><span>Showing {{ (pg.page - 1) * pg.per_page + 1 }}–{{ (pg.page - 1) * pg.per_page + pg.items|length }} of {{ pg.total }}</span>
+  {% if pg.pages > 1 %}<div class="row">
+    {% if pg.has_prev %}<a class="btn btn-sm" href="{{ url_for(request.endpoint, **dict(request.args.to_dict(), page=pg.prev_num)) }}">{{ icon('chevron-left') }} Previous</a>{% endif %}
+    <span>Page {{ pg.page }} of {{ pg.pages }}</span>
+    {% if pg.has_next %}<a class="btn btn-sm" href="{{ url_for(request.endpoint, **dict(request.args.to_dict(), page=pg.next_num)) }}">Next {{ icon('chevron-right') }}</a>{% endif %}
+  </div>{% endif %}
+</div>{% endif %}
+{% endmacro %}
+
+{% macro thumb(p) %}{% set img = p.cover %}<img src="{{ media(img) }}" alt="" loading="lazy" class="{{ 'ill' if not img or img.startswith('static:') else '' }}">{% endmacro %}
+
+{# rows = [(transaction, next_action)] #}
+{% macro tx_table(rows, show_updated=true) %}
+<table class="dt"><thead><tr><th>Item</th><th>{{ 'Seller' if current_user.role=='buyer' else 'Buyer' if current_user.role=='seller' else 'Buyer → Seller' }}</th><th>Amount</th><th>Status</th><th>Next step</th>{% if show_updated %}<th>Updated</th>{% endif %}<th></th></tr></thead><tbody>
+{% for t, a in rows %}
+<tr>
+  <td class="prodcell"><div class="prod">{{ thumb(t.product) }}<div style="min-width:0"><b>{{ t.product.title }}</b><small class="mono">{{ t.ref }}</small></div></div></td>
+  <td data-label="{{ 'Seller' if current_user.role=='buyer' else 'Buyer' if current_user.role=='seller' else 'Parties' }}">{% if current_user.role=='buyer' %}{{ t.seller.name }}{% elif current_user.role=='seller' %}{{ t.buyer.name }}{% else %}{{ t.buyer.name }} → {{ t.seller.name }}{% endif %}</td>
+  <td data-label="Amount" class="num">{{ t.amount|money }}</td>
+  <td data-label="Status">{{ status(t.status) }}</td>
+  <td data-label="Next step" class="next">{% if a.label %}<span class="{{ 'me' if a.mine }}">{{ a.label }}</span><small>{{ 'You' if a.mine else (a.who|capitalize) }}{% if a.deadline %} · due {{ a.deadline|dt }} UTC ({{ a.deadline|until }}){% endif %}</small>{% else %}<span class="faint">Nothing further</span>{% endif %}</td>
+  {% if show_updated %}<td data-label="Updated" class="small muted">{{ t.updated_at|ago }}</td>{% endif %}
+  <td data-label=""><a class="btn btn-sm" href="{{ url_for('orders.detail', ref=t.ref) }}">Open</a></td>
+</tr>
+{% endfor %}</tbody></table>
+{% endmacro %}
+
+{% macro stage_timeline(stages) %}
+<ol class="stages">{% for s in stages %}
+<li class="{{ s.state }}"><span class="dot">{% if s.state=='done' %}{{ icon('check') }}{% endif %}</span>
+  <div><b>{{ s.label }}<span class="owner">{{ s.owner }}</span></b>
+    <small>{% if s.state=='done' %}{% if s.at %}Reached {{ s.at|dt }} UTC{% else %}Completed{% endif %}{% elif s.state=='current' %}In progress now{% if s.at %} · since {{ s.at|dt }} UTC{% endif %}{% else %}Upcoming{% endif %}
+    {% if s.deadline %}<br><span class="dl">Deadline {{ s.deadline|dt }} UTC ({{ s.deadline|until }})</span>{% endif %}</small></div></li>
+{% endfor %}</ol>
+{% endmacro %}
+
+
+{% macro gauge(pct, label) %}
+<div class="gauge" data-gauge style="--lv:{{ ((pct or 0) * 1.06)|round(1) }}%" role="img" aria-label="{{ label }}: {{ (pct ~ '%') if pct is not none else 'no data' }}">
+  <span class="g-wave"></span><span class="g-wave w2"></span>
+  <div><div class="g-val" {% if pct is not none %}data-pct="{{ pct }}"{% endif %}>{{ (pct ~ '%') if pct is not none else '—' }}</div><small>{{ label }}</small></div></div>
+{% endmacro %}
+
+{% macro pipeline(pipe, empty_text) %}
+<div class="pipe">{% for st in pipe.steps %}
+  <div class="pipe-step {{ 'has' if st.n }}"><span class="pi">{{ icon(st.icon) }}</span><b data-count-up>{{ st.n }}</b><span class="l">{{ st.label }}</span></div>{% endfor %}
+</div>
+<div class="pipe-note">{% if pipe.total == 0 %}{{ empty_text }}{% else %}Counts are your real transactions at each stage.{% endif %}{% if pipe.disputed %} · <b>{{ pipe.disputed }}</b> in dispute{% endif %}</div>
+{% endmacro %}

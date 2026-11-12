@@ -1,0 +1,40 @@
+{% extends 'base.html' %}{% from '_macros.html' import status, icon, kpi, empty, tx_table, risk_badge, thumb, gauge, pipeline with context %}{% block title %}Seller overview · Omega{% endblock %}
+{% block content %}
+{% set money_total = st.paid_total + st.awaiting %}
+<section class="hero-card"><span class="orb"></span>
+  <div><h1><span data-greet>Welcome back</span>, {{ current_user.name.split()[0] }}</h1>
+    <p>{% if st.action %}{{ st.action }} order{{ 's need' if st.action != 1 else ' needs' }} something from you right now.{% elif st.awaiting_n %}{{ st.awaiting_n }} order{{ 's are' if st.awaiting_n != 1 else ' is' }} protected and on the way to release.{% else %}Create a listing and every sale is protected by video evidence and held payment.{% endif %}</p>
+    <div class="row"><a class="btn btn-primary" href="{{ url_for('market.new_listing') }}">{{ icon('plus') }} New listing</a><a class="btn" href="{{ url_for('portal.transactions', status='action') }}">{{ icon('clipboard-list') }} Orders needing action</a></div></div>
+  {{ gauge((st.paid_total / money_total * 100)|round|int if money_total else none, 'Of sales value paid out' if money_total else 'No sales value yet') }}
+</section>
+<div style="height:20px"></div>
+{% for t in acct_tasks %}<div class="status-note warn" style="margin-bottom:12px">{{ icon(t.icon) }}<div style="flex:1"><b>{{ t.text }}</b></div><a class="btn btn-sm" href="{{ url_for(t.ep) }}">{{ t.cta }}</a></div>{% endfor %}
+
+<div class="kpis">
+  {{ kpi('Total sales', st.sales, 'Completed and paid out' if st.sales else 'No completed sales yet', 'badge-check') }}
+  {{ kpi('Orders needing action', st.action, 'Waiting on you' if st.action else 'You are up to date', 'clipboard-list', 'warn' if st.action else '') }}
+  {{ kpi('Funds awaiting release', st.awaiting|money, (st.awaiting_n ~ ' order' ~ ('s' if st.awaiting_n != 1 else '') ~ ' held by Omega') if st.awaiting_n else 'No funds waiting', 'lock-keyhole') }}
+  {{ kpi('Completed payouts', st.paid_total|money, (st.paid_n ~ ' payout' ~ ('s' if st.paid_n != 1 else '')) if st.paid_n else 'No payouts yet', 'wallet') }}
+</div>
+
+<section class="glass panel flush sect"><div class="panel-h"><h2>Your order pipeline</h2></div>{{ pipeline(pipe, 'Orders will move through these stages once a buyer purchases one of your listings.') }}</section>
+
+<div class="cols-2 sect">
+  <div class="stack">
+    <section class="glass panel flush"><div class="panel-h"><h2>Needs your attention</h2></div>
+      {% if tasks %}<ul class="tasks">{% for t, a in tasks %}<li><span class="t-ic">{{ icon('clipboard-list') }}</span><div class="t-b"><b>{{ a.label }}</b><small>{{ t.product.title }} · <span class="mono">{{ t.ref }}</span>{% if a.deadline %} · <span class="due">due {{ a.deadline|dt }} UTC ({{ a.deadline|until }})</span>{% endif %}</small>{% if t.flow_index() is not none %}<i class="mini"><u style="--w:{{ (t.flow_index() / (MAIN_FLOW|length - 1) * 100)|round|int }}%" data-w></u></i>{% endif %}</div><a class="btn btn-sm btn-primary" href="{{ url_for('orders.detail', ref=t.ref) }}">Open</a></li>{% endfor %}</ul>
+      {% else %}{{ empty('check-check', 'No orders need your action', 'New orders that need your verification video, agreement confirmation or shipping details will appear here.') }}{% endif %}</section>
+    <section class="glass panel flush"><div class="panel-h"><h2>Recent orders</h2>{% if total_tx %}<a href="{{ url_for('portal.transactions') }}" style="font-weight:700;font-size:.86rem">All {{ total_tx }}</a>{% endif %}</div>
+      {% if recent %}{{ tx_table(recent, false) }}{% else %}{{ empty('inbox', 'No orders yet', 'Orders will appear here once a buyer purchases one of your listings.', url_for('market.new_listing'), 'Create a listing') }}{% endif %}</section>
+  </div>
+  <div class="stack">
+    <section class="glass panel flush"><div class="panel-h"><h2>Your listings</h2><a href="{{ url_for('portal.listings') }}" style="font-weight:700;font-size:.86rem">Manage</a></div>
+      {% if listings %}<ul class="tasks">{% for p in listings %}<li><span class="lthumb">{{ thumb(p) }}</span><div class="t-b"><b>{{ p.title }}</b><small>{{ p.price|money }} · <span class="badge {{ 'b-ok' if p.status=='active' else 'b-warn' }}" style="padding:1px 8px">{{ p.status }}</span></small></div></li>{% endfor %}</ul>
+        <div class="pager"><span>{{ live_count }} live of {{ listing_count }}</span></div>
+      {% else %}{{ empty('tag', 'No listings yet', 'Create your first listing. Every listing is risk-checked before it goes live.', url_for('market.new_listing'), 'Create a listing') }}{% endif %}</section>
+    <section class="glass panel"><h2 style="font:700 1.02rem var(--font-display);margin:0 0 6px">Payout account</h2>
+      <dl class="dl-list"><div><dt>PayPal email</dt><dd>{{ current_user.paypal_email or 'Not set' }}</dd></div><div><dt>Open disputes</dt><dd>{{ st.disputes }}</dd></div></dl>
+      <a class="btn btn-sm btn-block" style="margin-top:14px" href="{{ url_for('market.profile') }}">Edit profile and payout email</a></section>
+  </div>
+</div>
+{% endblock %}

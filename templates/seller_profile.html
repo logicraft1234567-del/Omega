@@ -1,0 +1,9 @@
+{% extends 'base.html' %}{% from '_macros.html' import pcard, icon with context %}{% block title %}{{ u.name }} · Omega{% endblock %}
+{% block content %}
+<div class="glass pad row" style="gap:22px"><span class="avatar" style="width:72px;height:72px;font-size:1.5rem">{{ u.initials }}</span>
+  <div><h1 class="h2" style="font-size:1.8rem">{{ u.name }}</h1><p class="muted" style="margin:6px 0">{{ u.bio or 'Seller on Omega' }} · {{ u.location or '' }}</p>
+  <div class="row">{% if u.id_verified %}<span class="badge b-info">{{ icon('badge-check') }} ID verified</span>{% endif %}<span class="badge">{{ u.completed_sales() }} completed sales</span><span class="badge">{{ u.disputes_against() }} disputes</span>{% set r=u.rating() %}{% if r[0] %}<span class="badge b-warn">★ {{ '%.1f'|format(r[0]) }} · {{ r[1] }} reviews</span>{% endif %}<span class="badge b-mute">Member since {{ u.created_at.strftime('%b %Y') }}</span></div></div></div>
+<h2 class="h3 mt">Listings</h2>{% if items %}<div class="grid g4 mt-s">{% for p in items %}{{ pcard(p) }}{% endfor %}</div>{% else %}<div class="glass empty mt-s">No active listings.</div>{% endif %}
+<h2 class="h3 mt">Reviews from verified buyers</h2>
+{% for r in reviews %}<div class="glass pad-s mt-s"><b>{{ '★'*r.stars }}</b> <span class="muted">— {{ r.buyer.name.split()[0] }} · {{ r.created_at|ago }}</span><p style="margin:6px 0 0">{{ r.comment }}</p></div>{% else %}<div class="glass empty mt-s">No reviews yet. Reviews only come from completed protected purchases.</div>{% endfor %}
+{% endblock %}

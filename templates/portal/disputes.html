@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% from '_macros.html' import icon, empty, pager, thumb with context %}{% block title %}Disputes · Omega{% endblock %}
+{% block content %}
+<div class="ph"><div><h1>Disputes</h1><p>Cases opened on a transaction. A dispute holds the payment until an admin decides.</p></div>
+  <div class="chips"><a href="{{ url_for('portal.disputes') }}" class="{{ 'on' if show=='all' }}">All</a><a href="{{ url_for('portal.disputes', show='open') }}" class="{{ 'on' if show=='open' }}">Open</a><a href="{{ url_for('portal.disputes', show='resolved') }}" class="{{ 'on' if show=='resolved' }}">Resolved</a></div></div>
+<section class="glass panel flush">
+{% if pg.items %}<table class="dt"><thead><tr><th>Case</th><th>Item</th><th>Reason</th><th>Opened by</th><th>Status</th><th>Opened</th><th></th></tr></thead><tbody>
+{% for d in pg.items %}<tr>
+  <td data-label="Case" class="mono">#{{ d.id }}</td>
+  <td class="prodcell"><div class="prod">{{ thumb(d.transaction.product) }}<div style="min-width:0"><b>{{ d.transaction.product.title }}</b><small class="mono">{{ d.transaction.ref }}</small></div></div></td>
+  <td data-label="Reason">{{ d.reason.replace('_',' ')|capitalize }}</td>
+  <td data-label="Opened by">{{ d.opened_by.name if d.opened_by else '—' }}</td>
+  <td data-label="Status"><span class="badge {{ 'b-ok' if d.status=='resolved' else 'b-bad' }}">{{ d.status|capitalize }}{% if d.resolution %} · {{ d.resolution.replace('_',' ') }}{% endif %}</span></td>
+  <td data-label="Opened" class="small muted">{{ d.created_at|dt }}</td>
+  <td data-label=""><a class="btn btn-sm" href="{{ url_for('orders.detail', ref=d.transaction.ref) }}">View case</a></td></tr>{% endfor %}</tbody></table>{{ pager(pg) }}
+{% else %}{{ empty('shield-check', 'You currently have no ' ~ ('open ' if show=='open' else 'resolved ' if show=='resolved' else '') ~ 'disputes', 'If something is wrong with a transaction, open a case from that transaction\'s page while the payment is still held.', url_for('portal.transactions'), 'View my transactions') }}{% endif %}
+</section>
+{% endblock %}

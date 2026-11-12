@@ -1,0 +1,33 @@
+{% extends 'base.html' %}{% from '_macros.html' import risk_panel, risk_badge, icon with context %}{% block title %}{{ p.title }} · Omega{% endblock %}
+{% block content %}
+<div class="split">
+  <div class="stack">
+    <div class="gallery">
+      <div class="main glass"><img id="mainimg" src="{{ media(p.cover) }}" alt="{{ p.title }}" class="{{ '' if (p.cover or '').startswith('static:') else 'photo' }}"></div>
+      {% if p.images|length>1 %}<div class="thumbs">{% for im in p.images %}<button data-thumb="{{ media(im.path) }}" aria-label="Photo {{ loop.index }}"><img src="{{ media(im.path) }}" alt=""></button>{% endfor %}</div>{% endif %}
+    </div>
+    <div class="glass pad"><h3 class="h3">Description</h3><p class="muted" style="white-space:pre-line">{{ p.description or 'No description.' }}</p>
+      <dl class="spec mt-s">
+        <div><dt>Brand</dt><dd>{{ p.brand or '—' }}</dd></div><div><dt>Model</dt><dd>{{ p.model or '—' }}</dd></div>
+        <div><dt>Storage</dt><dd>{{ p.storage or '—' }}</dd></div><div><dt>Colour</dt><dd>{{ p.colour or '—' }}</dd></div>
+        <div><dt>Condition</dt><dd>{{ p.condition }}</dd></div><div><dt>Serial / IMEI</dt><dd>{{ 'Declared (hidden until verified)' if p.serial else 'Not declared' }}</dd></div>
+      </dl></div>
+  </div>
+  <div class="stack" style="position:sticky;top:96px">
+    <div class="glass pad">
+      <div class="row between"><span class="chip">{{ p.category }}</span>{% if p.status!='active' %}<span class="badge b-warn">{{ p.status|capitalize }}</span>{% endif %}</div>
+      <h1 class="h2" style="font-size:1.7rem;margin:12px 0">{{ p.title }}</h1>
+      <div class="price" style="font-size:2rem">{{ p.price|money }}</div>
+      <p class="small muted">Held by Omega until the item is verified. Not released to the seller before.</p>
+      {% if p.status=='active' %}
+        {% if current_user.is_authenticated and current_user.id==p.seller_id %}<p class="small muted">This is your listing.</p>
+        {% else %}<a class="btn btn-primary btn-block shine" href="{{ url_for('orders.checkout', pid=p.id) }}">{{ icon('shield-check') }} Buy with protection</a>{% endif %}
+      {% endif %}
+      <hr style="border:0;border-top:1px solid var(--stroke);margin:20px 0">
+      <a class="row" href="{{ url_for('market.seller_profile', uid=p.seller_id) }}"><span class="avatar">{{ p.seller.initials }}</span><div><b>{{ p.seller.name }}</b>{% if p.seller.id_verified %} <span class="badge b-info">{{ icon('badge-check') }} ID verified</span>{% endif %}<br>
+        <span class="small muted">{{ p.seller.completed_sales() }} protected sales{% set r=p.seller.rating() %}{% if r[0] %} · ★ {{ '%.1f'|format(r[0]) }} ({{ r[1] }}){% endif %}</span></div></a>
+    </div>
+    {{ risk_panel(rep) }}
+  </div>
+</div>
+{% endblock %}

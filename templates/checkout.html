@@ -1,0 +1,21 @@
+{% extends 'base.html' %}{% from '_macros.html' import risk_panel, icon with context %}{% block title %}Checkout · Omega{% endblock %}
+{% block content %}
+<h1 class="h2">Protected checkout</h1>
+<div class="split mt">
+  <form method="post" class="glass pad stack" data-busy><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h3 class="h3">Your agreement</h3>
+    <dl class="spec">{% for k,v in p.spec_snapshot().items() if v and k!='serial' %}<div><dt>{{ k|capitalize }}</dt><dd>{{ v if k!='price' else (v|float|money) }}</dd></div>{% endfor %}</dl>
+    <ul class="reasons">
+      <li class="sev-good">{{ icon('lock-keyhole', 'ic') }}<span>Your payment is captured and held. The seller isn't paid yet.</span></li>
+      <li class="sev-good">{{ icon('video', 'ic') }}<span>The seller must film the device (with a random challenge) before shipping, within {{ deadlines.ship }} hours.</span></li>
+      <li class="sev-good">{{ icon('camera', 'ic') }}<span>You get {{ deadlines.inspect }} hours after delivery to film the unboxing and confirm the item.</span></li>
+      <li class="sev-good">{{ icon('user-check', 'ic') }}<span>If anything doesn't match, release stops and an admin reviews both videos. If someone goes silent, a person decides — nothing is auto-paid.</span></li>
+    </ul>
+    <label class="check"><input type="checkbox" name="agree" required> I confirm the description above is what I'm buying and I accept these terms.</label>
+    {% if payment_mode == 'unconfigured' %}<div class="status-note warn">{{ icon('triangle-alert') }}<div><b>Checkout is unavailable</b><p>Payments aren't configured on this server yet, so this purchase can't be started.</p></div></div>
+    <button class="btn btn-primary btn-block" type="button" disabled>{{ icon('credit-card') }} Pay {{ p.price|money }}</button>
+    {% else %}<button class="btn btn-primary btn-block" type="submit">{{ icon('credit-card') }} Pay {{ p.price|money }} with {{ 'the development payment simulator (no real money)' if payment_mode=='simulated' else 'PayPal' }}</button>{% endif %}
+  </form>
+  <div class="stack"><div class="glass pad row"><img src="{{ media(p.cover) }}" alt="" style="width:80px;height:80px;object-fit:contain"><div><b>{{ p.title }}</b><br><span class="muted small">Sold by {{ p.seller.name }}</span></div></div>{{ risk_panel(rep, 'Risk report for this item') }}</div>
+</div>
+{% endblock %}

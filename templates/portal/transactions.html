@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% from '_macros.html' import status, icon, empty, tx_table, pager with context %}{% block title %}{{ 'Transactions' if current_user.role=='admin' else 'My transactions' }} · Omega{% endblock %}
+{% block content %}
+<div class="ph"><div><h1>{{ 'Transactions' if current_user.role=='admin' else 'My transactions' }}</h1><p>{{ 'Every protected purchase you have made.' if current_user.role=='buyer' else 'Every order placed on your listings.' if current_user.role=='seller' else 'Every transaction on the platform.' }}</p></div>
+  {% if current_user.role != 'seller' %}<a class="btn btn-primary" href="{{ url_for('market.browse') }}">{{ icon('store') }} Browse marketplace</a>{% endif %}</div>
+<div class="toolbar">
+  <form class="s" method="get" role="search"><input type="search" name="q" value="{{ q }}" placeholder="Search by reference, item or {{ 'seller' if current_user.role=='buyer' else 'buyer' }}" maxlength="80" aria-label="Search transactions"><input type="hidden" name="status" value="{{ f }}"><button class="btn btn-sm" style="--h:42px">{{ icon('search') }} Search</button></form>
+  <div class="chips">{% for k, (label, _) in filters.items() %}<a href="{{ url_for('portal.transactions', status=k, q=q or none) }}" class="{{ 'on' if f==k }}">{{ label }}</a>{% endfor %}</div>
+</div>
+<section class="glass panel flush">
+  {% if rows %}{{ tx_table(rows) }}{{ pager(pg) }}
+  {% elif total_all == 0 %}{{ empty('receipt', 'No transactions yet', 'Your transactions will appear here once you make your first purchase.' if current_user.role=='buyer' else 'Your transactions will appear here once a buyer purchases one of your listings.', url_for('market.browse') if current_user.role=='buyer' else url_for('market.new_listing'), 'Browse marketplace' if current_user.role=='buyer' else 'Create a listing') }}
+  {% else %}{{ empty('search-x', 'No transactions match', 'Try a different search or clear the filter.', url_for('portal.transactions'), 'Clear filters') }}{% endif %}
+</section>
+{% endblock %}

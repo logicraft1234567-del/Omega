@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% from '_macros.html' import icon with context %}{% block title %}Notifications · Omega{% endblock %}
+{% block content %}<h1 class="h2">Notifications</h1>
+<div class="stack mt" style="max-width:760px">{% for n in rows %}<a class="glass pad-s lift row" href="{{ n.link or '#' }}"><span class="icon-btn">{{ icon({'payment':'wallet','shipping':'truck','verification':'scan-search','dispute':'flag','deadline':'timer','fraud':'shield-alert','evidence':'file-search','listing':'tag'}.get(n.kind,'bell')) }}</span><div><b>{{ n.message }}</b><br><span class="small muted">{{ n.created_at|ago }}</span></div></a>
+{% else %}<div class="glass empty">You're all caught up.</div>{% endfor %}</div>{% endblock %}

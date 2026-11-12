@@ -1,0 +1,13 @@
+{% extends 'base.html' %}{% block title %}Evidence report {{ tx.ref }}{% endblock %}
+{% block content %}
+<div class="row between no-print"><h1 class="h2">Evidence report</h1><div class="row"><button class="btn btn-primary" onclick="print()">Print / save as PDF</button><a class="btn" href="{{ url_for('orders.report_json', ref=tx.ref) }}">Download JSON</a><a class="btn" href="{{ url_for('orders.detail', ref=tx.ref) }}">Back</a></div></div>
+<div class="glass pad mt stack">
+<h2 class="h3">Order {{ r.transaction }} · {{ r.status }}</h2>
+<dl class="kv"><dt>Created</dt><dd>{{ r.created }}</dd><dt>Amount</dt><dd>{{ r.amount }} {{ r.currency }}</dd><dt>Buyer</dt><dd>{{ r.buyer }}</dd><dt>Seller</dt><dd>{{ r.seller }}</dd><dt>Item</dt><dd>{{ r.product.title }} ({{ r.product.model }}, {{ r.product.storage }}, {{ r.product.colour }}, {{ r.product.condition }})</dd></dl>
+<h3 class="h3">Agreement acknowledgements</h3>{% for a in r.agreement.acknowledgements %}<p class="small" style="margin:2px 0">{{ a.role }} · {{ a.user }} · {{ a.at }} · IP {{ a.ip }}</p>{% endfor %}
+<h3 class="h3">Payment</h3><pre class="small" style="white-space:pre-wrap">{{ r.payment }}{{ '\n' ~ r.disbursement if r.disbursement }}</pre>
+<h3 class="h3">Evidence (hashed)</h3>{% for e in r.evidence %}<p class="small mono" style="margin:2px 0;word-break:break-all">{{ e.kind }} · {{ e.uploaded }} · by {{ e.by }} · sha256 {{ e.sha256 }}</p>{% endfor %}
+<h3 class="h3">AI comparison</h3>{% if r.ai_comparison %}<p class="small">{{ r.ai_comparison.recommendation }} · confidence {{ r.ai_comparison.confidence }} · engines: Fire (Gemini, video) + Water (Groq, images)</p>{% for i in r.ai_comparison.unavailable or [] %}<p class="small">⚠ {{ i.name }} ({{ i.provider }}) unreachable: {{ i.reason }}</p>{% endfor %}<p class="small">{{ r.ai_comparison.explanation }}</p>{% for d in r.ai_comparison.discrepancies %}<p class="small">⚠ {{ d }}</p>{% endfor %}{% else %}<p class="small muted">None yet.</p>{% endif %}
+<h3 class="h3">Disputes</h3>{% for d in r.disputes %}<p class="small">{{ d.reason }} · {{ d.status }} · {{ d.resolution or 'unresolved' }} {{ d.note or '' }}</p>{% else %}<p class="small muted">None.</p>{% endfor %}
+<h3 class="h3">Timeline</h3>{% for e in r.timeline %}<p class="small" style="margin:2px 0">{{ e.at[:19].replace('T',' ') }} · {{ e.actor }} · {{ e.event }}</p>{% endfor %}
+</div>{% endblock %}

@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import icon, pcard with context %}
+{% block body %}
+<!-- INTRO: the product story, shown once per browser session (static/js/intro.js; ?intro=0 skips it) -->
+<script>(function(){try{var h=document.documentElement,s=sessionStorage;if(/[?&]intro=0/.test(location.search)||s.getItem('omega-intro')||matchMedia('(prefers-reduced-motion: reduce)').matches)return;s.setItem('omega-intro','1');h.classList.add('intro-on');setTimeout(function(){var e=document.getElementById('intro');if(e)e.remove();h.classList.remove('intro-on')},14000)}catch(e){}})()</script>
+<div id="intro" aria-hidden="true"><canvas></canvas>
+  <div class="intro-brand"><img src="{{ url_for('static', filename='img/omega-mark.png') }}" alt=""><b>OMEGA</b><span>Buy · Verify · Get Paid</span></div>
+  <div class="intro-ui"><p class="intro-cap"></p>
+    <ol class="intro-steps"><li>Payment held</li><li>Seller video</li><li>Delivery</li><li>Buyer video</li><li>AI comparison</li><li>Release</li></ol></div>
+  <div class="intro-bar"><i></i></div>
+  <button class="intro-skip" type="button">Skip intro ›</button></div>
+<!-- ============ HERO SLIDESHOW ============ -->
+<section class="hero" data-hero aria-roledescription="carousel" aria-label="How Omega protects a sale">
+
+  <article class="slide brand is-active" aria-label="Omega">
+    <div class="slide-tint"></div>
+    <div class="caption glass">
+      <span class="step-tag">{{ icon('shield-check') }} Buy · Verify · Get Paid</span>
+      <h1 class="h1">Pay safely for used phones and laptops.</h1>
+      <p>Omega holds your money while video and AI check the item. The seller is paid only when what arrives matches what was promised.</p>
+      <div class="row"><a class="btn btn-primary shine" href="{{ url_for('market.browse') }}">Browse protected items</a><a class="btn" href="{{ url_for('auth.signup', role='seller') }}">Start selling</a></div>
+    </div>
+    <div class="brand-art">
+      <div class="ring r1"></div><div class="ring r2"></div>
+      <img class="logo-card" fetchpriority="high" decoding="async" src="{{ url_for('static', filename='img/omega-logo.webp') }}" alt="Omega — Buy, Verify, Get Paid">
+      <img class="phone" src="{{ url_for('static', filename='img/iphone.webp') }}" alt="" aria-hidden="true">
+      <div class="scan" aria-hidden="true"></div>
+    </div>
+  </article>
+
+  <article class="slide" aria-label="Seller records proof">
+    <img class="slide-bg" loading="lazy" decoding="async" width="1600" height="900" src="{{ url_for('static', filename='img/seller-photo.webp') }}" alt="A seller photographing a device before packing it"><div class="slide-shade"></div><div class="slide-tint"></div>
+    <div class="caption glass">
+      <span class="step-tag">{{ icon('video') }} The seller records proof</span>
+      <h2 class="h1">Before it ships, the seller films the real device.</h2>
+      <p>A random challenge — a code on paper, a spoken word — shows the footage is fresh, not recycled from another listing.</p>
+      <a class="btn btn-primary" href="{{ url_for('auth.signup', role='seller') }}">List an item</a>
+    </div>
+    <div class="float-card glass"><div class="row">{{ icon('scan-text') }}<div><b>Serial number is read from the video</b><br><small>and compared with the listing</small></div></div></div>
+  </article>
+
+  <article class="slide" aria-label="Payment held while in transit">
+    <img class="slide-bg" loading="lazy" decoding="async" width="1600" height="900" src="{{ url_for('static', filename='img/delivery-moto.webp') }}" alt="A courier on a motorbike handing a parcel to a customer"><div class="slide-shade"></div><div class="slide-tint"></div>
+    <div class="caption glass">
+      <span class="step-tag">{{ icon('lock-keyhole') }} Your money waits</span>
+      <h2 class="h1">The parcel travels. Your payment stays put.</h2>
+      <p>Nothing reaches the seller while the courier is on the road. Every dispatch and delivery event goes into a tamper-evident record.</p>
+      <a class="btn btn-primary" href="#how">See every step</a>
+    </div>
+    <div class="float-card glass"><div class="row">{{ icon('truck') }}<div><b>Payment stays held in transit</b><br><small>the seller is not paid yet</small></div></div></div>
+  </article>
+
+  <article class="slide" aria-label="Delivered and timestamped">
+    <img class="slide-bg" loading="lazy" decoding="async" width="1600" height="900" src="{{ url_for('static', filename='img/delivery-door.webp') }}" alt="A courier scanning a parcel at a front door"><div class="slide-shade"></div><div class="slide-tint"></div>
+    <div class="caption glass">
+      <span class="step-tag">{{ icon('package-check') }} Delivered and logged</span>
+      <h2 class="h1">Delivery starts a 48-hour inspection window.</h2>
+      <p>The buyer confirms arrival and whether the seal was intact. Late or silent? A human reviews it. Silence is never treated as fraud.</p>
+      <a class="btn btn-primary" href="{{ url_for('market.browse') }}">Shop with protection</a>
+    </div>
+    <div class="float-card glass"><div class="row">{{ icon('timer') }}<div><b>Buyer inspection window</b><br><small>the buyer unboxes on camera</small></div></div></div>
+  </article>
+
+  <article class="slide" aria-label="Buyer unboxes on camera">
+    <img class="slide-bg" loading="lazy" decoding="async" width="1600" height="900" src="{{ url_for('static', filename='img/unboxing.webp') }}" alt="A buyer opening a parcel on a sofa"><div class="slide-shade"></div><div class="slide-tint"></div>
+    <div class="caption glass">
+      <span class="step-tag">{{ icon('camera') }} The buyer opens it on camera</span>
+      <h2 class="h1">One unboxing video is all it takes.</h2>
+      <p>Film the package, the device, the serial number. Omega compares your clip with the seller's, frame by frame.</p>
+      <a class="btn btn-primary" href="{{ url_for('auth.signup') }}">Create a free account</a>
+    </div>
+    <div class="float-card glass"><div class="row">{{ icon('git-compare') }}<div><b>Model, colour and condition</b><br><small>compared across both videos</small></div></div></div>
+  </article>
+
+  <article class="slide" aria-label="AI catches a mismatch">
+    <img class="slide-bg" loading="lazy" decoding="async" width="1600" height="900" src="{{ url_for('static', filename='img/buyer-doubt.webp') }}" alt="A buyer frowning at the contents of a parcel"><div class="slide-shade"></div><div class="slide-tint"></div>
+    <div class="caption glass">
+      <span class="step-tag">{{ icon('shield-alert') }} When something's off</span>
+      <h2 class="h1">Wrong item? The payment never leaves.</h2>
+      <p>A swapped phone, a new scratch, a different colour: Omega flags it, freezes the release and opens a case with a neutral AI summary for an admin.</p>
+      <a class="btn btn-primary" href="#how">How disputes work</a>
+    </div>
+    <div class="float-card glass"><div class="row">{{ icon('octagon-alert') }}<div><b>A mismatch holds the release</b><br><small>an admin reviews both videos</small></div></div></div>
+  </article>
+
+  <article class="slide" aria-label="Seller gets paid">
+    <img class="slide-bg" loading="lazy" decoding="async" width="1600" height="900" src="{{ url_for('static', filename='img/seller-shop.webp') }}" alt="A happy seller packing orders in a workshop"><div class="slide-shade"></div><div class="slide-tint"></div>
+    <div class="caption glass">
+      <span class="step-tag">{{ icon('wallet') }} Everything checks out</span>
+      <h2 class="h1">Verified. Confirmed. Seller paid.</h2>
+      <p>When the evidence matches and the buyer confirms, the backend passes eleven release checks and the payment provider moves the money.</p>
+      <a class="btn btn-primary" href="{{ url_for('auth.signup', role='seller') }}">Sell with confidence</a>
+    </div>
+    <div class="float-card glass"><div class="row">{{ icon('circle-check-big') }}<div><b>Every release check must pass</b><br><small>before a payout is requested</small></div></div></div>
+  </article>
+
+  <div class="hero-ui">
+    <div class="wrap">
+      <div class="progress" role="tablist" aria-label="Slides">
+        {% for t in ['Overview','Seller proof','In transit','Delivered','Unboxing','Mismatch','Paid'] %}<button role="tab" aria-label="Slide {{ loop.index }}: {{ t }}"><i></i><span>{{ t }}</span></button>{% endfor %}
+      </div>
+      <div class="arrows"><button class="icon-btn" data-prev aria-label="Previous slide">{{ icon('chevron-left') }}</button><button class="icon-btn" data-next aria-label="Next slide">{{ icon('chevron-right') }}</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MARQUEE ============ -->
+<div class="marquee" aria-hidden="true"><div class="marquee-track">
+  {% for _ in range(2) %}
+  <span>{{ icon('lock-keyhole') }} Payment held until verified</span><span>{{ icon('video') }} Seller and buyer video evidence</span><span>{{ icon('scan-text') }} Serial and IMEI reading</span>
+  <span>{{ icon('git-compare') }} AI comparison of both videos</span><span>{{ icon('user-check') }} A human reviews every doubt</span><span>{{ icon('fingerprint') }} SHA-256 hashed evidence</span><span>{{ icon('credit-card') }} PayPal-powered checkout</span><span>{{ icon('lock-keyhole') }} Tamper-evident seal ID</span><span>{{ icon('truck') }} Courier chain of custody</span><span>{{ icon('video') }} Video authenticity signals</span>
+  {% endfor %}
+</div></div>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="section" id="how"><div class="wrap">
+  <div class="sec-head reveal"><h2 class="h2">Five steps between a payment and a payout.</h2><p class="lead">Omega doesn't ask you to trust a stranger. It asks both sides to leave evidence, then lets the evidence decide.</p></div>
+  <div class="how">
+    {% set steps = [
+      ('Buyer pays, money is held','Checkout runs through PayPal. The payment is captured and held — the seller sees "payment secured", not the money.','delivery-moto.webp'),
+      ('Seller films the device','A random on-camera challenge plus the serial number. AI checks the footage against the listing before the parcel ships.','seller-photo.webp'),
+      ('Courier delivers, clock starts','Tracking and delivery are logged. The buyer has an inspection window to unbox on camera.','delivery-door.webp'),
+      ('AI compares both videos','Model, colour, condition and identifiers are checked across both clips. Uncertain results go to a person, never straight to payout.','unboxing.webp'),
+      ('Checks pass, seller is paid','Eleven release checks run on the backend. Only then does the payment provider release funds, exactly once.','seller-shop.webp')] %}
+    {% for t, d, img in steps %}
+    <div class="glass how-step reveal" data-d="{{ loop.index0 % 3 }}">
+      <span class="n">{{ loop.index }}</span>
+      <div><h3 class="h3">{{ t }}</h3><p>{{ d }}</p></div>
+      <div class="pic"><img src="{{ url_for('static', filename='img/' ~ img) }}" alt="" loading="lazy"></div>
+    </div>
+    {% endfor %}
+  </div>
+</div></section>
+
+<!-- ============ LIVE DEMO ============ -->
+<section class="section" style="padding-top:20px"><div class="wrap">
+  <div class="demo" data-demo>
+    <div class="glass demo-stage reveal">
+      <div class="halo"></div><div class="scanline"></div>
+      <img class="ph" loading="lazy" decoding="async" width="640" height="640" src="{{ url_for('static', filename='img/iphone.webp') }}" alt="Illustration of a smartphone being verified">
+      <span class="tag t1 glass">{{ icon('lock-keyhole') }} Payment held</span>
+      <span class="tag t2 glass">{{ icon('video') }} Seller video accepted</span>
+      <span class="tag t3 glass">{{ icon('scan-text') }} Serial matched</span>
+      <span class="tag t4 glass">{{ icon('badge-check') }} Findings reported</span>
+    </div>
+    <div class="reveal" data-d="1">
+      <h2 class="h2">Follow a purchase from checkout to payout.</h2>
+      <p class="lead" style="margin:14px 0 26px">Phones are the first category Omega covers. Here's what happens at each stage.</p>
+      <div class="demo-steps">
+        {% for ic, t, s in [('lock-keyhole','Payment secured','Captured and held, seller not yet paid'),('video','Seller verification video','Challenge shown, serial read'),('truck','Shipped and delivered','Tracking entered by the seller, delivery confirmed by the buyer'),('camera','Buyer unboxing video','Uploaded within the inspection window'),('git-compare','AI comparison','Both videos are compared and findings reported'),('wallet','Release','Buyer confirms, checks pass, seller paid')] %}
+        <div class="demo-step"><span class="ic">{{ icon(ic) }}</span><div><b>{{ t }}</b><small>{{ s }}</small></div></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ FEATURED ============ -->
+{% if featured %}
+<section class="section" style="padding-top:20px"><div class="wrap">
+  <div class="row between sec-head reveal" style="margin-bottom:28px"><div><h2 class="h2">Fresh listings, all protected.</h2></div><a class="btn" href="{{ url_for('market.browse') }}">See all {{ icon('arrow-right') }}</a></div>
+  <div class="grid g4">{% for p in featured %}<div class="reveal" data-d="{{ loop.index0 % 4 }}">{{ pcard(p) }}</div>{% endfor %}</div>
+</div></section>
+{% endif %}
+
+<!-- ============ FOR BUYERS / SELLERS ============ -->
+<section class="section" style="padding-top:20px"><div class="wrap grid g2">
+  <div class="glass pad lift reveal" style="overflow:hidden">
+    <img src="{{ url_for('static', filename='img/buyer-doubt.webp') }}" alt="" style="border-radius:18px;height:230px;width:100%;object-fit:cover;margin-bottom:20px">
+    <h3 class="h3">If you're buying</h3><p class="muted">See a risk report before you pay. Know exactly what was promised. Get a refund path if the item isn't what the seller showed.</p>
+    <a class="btn mt-s" href="{{ url_for('market.browse') }}">Find an item</a>
+  </div>
+  <div class="glass pad lift reveal" data-d="1" style="overflow:hidden">
+    <img src="{{ url_for('static', filename='img/seller-shop.webp') }}" alt="" style="border-radius:18px;height:230px;width:100%;object-fit:cover;margin-bottom:20px">
+    <h3 class="h3">If you're selling</h3><p class="muted">Buyers trust a verified listing more. Build a record of completed, evidence-backed sales and get paid without chasing anyone.</p>
+    <a class="btn mt-s" href="{{ url_for('auth.signup', role='seller') }}">Open a seller account</a>
+  </div>
+</div></section>
+
+<!-- ============ PROTECTION FEATURES ============ -->
+<section class="section" id="features"><div class="wrap">
+  <div class="sec-head reveal"><h2 class="h2">Five layers of protection on every order.</h2><p class="lead">From the moment the item is packed to the moment a dispute is settled, each step leaves evidence that can be checked.</p></div>
+  <div class="feats">
+    <article class="glass feat reveal">
+      <div class="feat-pic"><img src="{{ url_for('static', filename='img/feat-seal-lock.webp') }}" alt="Package Lock Verification" loading="lazy" decoding="async"></div>
+      <div class="feat-body"><span class="feat-num">{{ icon('lock-keyhole') }} Feature 01</span><h3 class="h2" style="font-size:clamp(1.4rem,2.6vw,2rem)">Package Lock Verification</h3><p class="muted">Every transaction gets a unique package identity.</p><ul><li>{{ icon('circle-check-big') }}<span>The seller films the item going into the package</span></li><li>{{ icon('circle-check-big') }}<span>The package is closed on camera</span></li><li>{{ icon('circle-check-big') }}<span>A unique tamper-evident seal is attached and its ID recorded</span></li></ul></div>
+    </article>
+    <article class="glass feat reveal">
+      <div class="feat-pic"><img src="{{ url_for('static', filename='img/feat-courier-scan.webp') }}" alt="Courier Chain of Custody" loading="lazy" decoding="async"></div>
+      <div class="feat-body"><span class="feat-num">{{ icon('truck') }} Feature 02</span><h3 class="h2" style="font-size:clamp(1.4rem,2.6vw,2rem)">Courier Chain of Custody</h3><p class="muted">Every handover is logged, so nobody has to guess where the parcel was.</p><ul><li>{{ icon('circle-check-big') }}<span>Handovers, scans, timestamps and tracking events</span></li><li>{{ icon('circle-check-big') }}<span>Seal condition recorded at each stage</span></li><li>{{ icon('circle-check-big') }}<span>Courier APIs integrated where available</span></li></ul></div>
+    </article>
+    <article class="glass feat reveal">
+      <div class="feat-pic"><img src="{{ url_for('static', filename='img/feat-fingerprint-scan.webp') }}" alt="Advanced Product Fingerprinting" loading="lazy" decoding="async"></div>
+      <div class="feat-body"><span class="feat-num">{{ icon('fingerprint') }} Feature 03</span><h3 class="h2" style="font-size:clamp(1.4rem,2.6vw,2rem)">Advanced Product Fingerprinting</h3><p class="muted">The device is identified by what it is, not what the listing says.</p><ul><li>{{ icon('circle-check-big') }}<span>Serial number, IMEI and accessories captured</span></li><li>{{ icon('circle-check-big') }}<span>Unique physical marks and condition recorded</span></li><li>{{ icon('circle-check-big') }}<span>Compared again at every verification stage</span></li></ul></div>
+    </article>
+    <article class="glass feat reveal">
+      <div class="feat-pic"><img src="{{ url_for('static', filename='img/feat-video-analysis.webp') }}" alt="Video Authenticity Analysis" loading="lazy" decoding="async"></div>
+      <div class="feat-body"><span class="feat-num">{{ icon('video') }} Feature 04</span><h3 class="h2" style="font-size:clamp(1.4rem,2.6vw,2rem)">Video Authenticity Analysis</h3><p class="muted">Footage is checked for signs it was cut, reused or reworked.</p><ul><li>{{ icon('circle-check-big') }}<span>Suspicious edits, repeated footage, missing intervals</span></li><li>{{ icon('circle-check-big') }}<span>Inconsistent metadata and possible manipulation</span></li></ul><p class="feat-note">These are risk signals, not proof of fraud. A person makes the call.</p></div>
+    </article>
+    <article class="glass feat reveal">
+      <div class="feat-pic"><img src="{{ url_for('static', filename='img/feat-dispute-evidence.webp') }}" alt="Independent Dispute Resolution" loading="lazy" decoding="async"></div>
+      <div class="feat-body"><span class="feat-num">{{ icon('user-check') }} Feature 05</span><h3 class="h2" style="font-size:clamp(1.4rem,2.6vw,2rem)">Independent Dispute Resolution</h3><p class="muted">One evidence timeline shows what the buyer, seller and courier each recorded.</p><ul><li>{{ icon('circle-check-big') }}<span>Side-by-side timeline of all three records</span></li><li>{{ icon('circle-check-big') }}<span>Human reviewers make the final, fair decision</span></li></ul></div>
+    </article>
+  </div>
+</div></section>
+
+<!-- ============ NUMBERS (facts about the product, not claims about traffic) ============ -->
+<section class="section" style="padding:20px 0"><div class="wrap grid g4">
+  <div class="glass stat reveal"><div class="num grad-text" data-count="11">0</div><p>release checks before money moves</p></div>
+  <div class="glass stat reveal" data-d="1"><div class="num grad-text" data-count="{{ inspection_hours }}" data-suffix="h">0</div><p>default buyer inspection window after delivery</p></div>
+  <div class="glass stat reveal" data-d="2"><div class="num grad-text" data-count="2">0</div><p>videos compared on every order</p></div>
+  <div class="glass stat reveal" data-d="3"><div class="num grad-text" data-count="1">0</div><p>payout per order, enforced in the database</p></div>
+</div></section>
+
+<!-- ============ CTA ============ -->
+<section class="section"><div class="wrap">
+  <div class="glass cta reveal">
+    <div><h2 class="h2">Make your next sale a protected one.</h2><p class="lead" style="margin:14px 0 24px">Create a free account, list or find an item, and follow every step of the evidence report yourself.</p>
+      <div class="row"><a class="btn btn-primary shine" href="{{ url_for('auth.signup') }}">Create an account</a><a class="btn" href="{{ url_for('auth.login') }}">Log in</a></div></div>
+    <img class="emb" src="{{ url_for('static', filename='img/omega-emblem.webp') }}" alt="Omega shield emblem">
+  </div>
+</div></section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/intro.js') }}" defer></script>{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'auth/_layout.html' %}{% block title %}Log in · Omega{% endblock %}
+{% block form %}
+<h1>Welcome back</h1><p class="sub">Log in to track your protected orders.</p>
+{{ alerts() }}
+<form method="post" data-busy data-validate novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% if nxt %}<input type="hidden" name="next" value="{{ nxt }}">{% endif %}
+  <div class="field"><div class="fl">{{ icon('mail') }}<input id="email" type="email" name="email" value="{{ form.get('email','') }}" placeholder=" " required {{ 'autofocus' if not form.get('email') }} autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" aria-describedby="e-email"><label for="email">Email address</label></div><p class="fe" id="e-email" data-for="email" hidden></p></div>
+  <div class="field"><div class="fl">{{ icon('lock-keyhole') }}<input id="pw" type="password" name="password" placeholder=" " required {{ 'autofocus' if form.get('email') }} autocomplete="current-password" aria-describedby="e-password"><label for="pw">Password</label>
+    <button class="eye" type="button" data-eye aria-label="Show password" aria-pressed="false">{{ icon('eye') }}</button></div>
+    <p class="fe caps" data-caps hidden>{{ icon('arrow-big-up') }} Caps Lock is on</p><p class="fe" id="e-password" data-for="password" hidden></p></div>
+  <div class="auth-row"><label class="check"><input type="checkbox" name="remember"> Keep me signed in</label></div>
+  <button class="btn btn-primary btn-lg btn-block" type="submit">Log in {{ icon('arrow-right') }}</button>
+</form>
+<p class="auth-switch">New to Omega? <a href="{{ url_for('auth.signup', next=nxt or None) }}">Create an account</a></p>
+{% endblock %}

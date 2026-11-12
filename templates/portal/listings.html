@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% from '_macros.html' import icon, empty, pager, thumb, risk_badge with context %}{% block title %}My listings · Omega{% endblock %}
+{% block content %}
+<div class="ph"><div><h1>My listings</h1><p>Items you have listed. Each listing gets a risk report; high-risk ones wait for an admin review.</p></div><a class="btn btn-primary" href="{{ url_for('market.new_listing') }}">{{ icon('plus') }} New listing</a></div>
+<section class="glass panel flush">
+{% if pg.items %}<table class="dt"><thead><tr><th>Item</th><th>Price</th><th>Status</th><th>Risk</th><th>Listed</th><th></th></tr></thead><tbody>
+{% for p in pg.items %}<tr>
+  <td class="prodcell"><div class="prod">{{ thumb(p) }}<div style="min-width:0"><b><a href="{{ url_for('market.product', pid=p.id) }}">{{ p.title }}</a></b><small>{{ p.condition }}</small></div></div></td>
+  <td data-label="Price" class="num">{{ p.price|money }}</td>
+  <td data-label="Status"><span class="badge {{ 'b-ok' if p.status=='active' else 'b-info' if p.status in ('reserved','sold') else 'b-warn' }}">{{ {'flagged':'Awaiting admin review'}.get(p.status, p.status|capitalize) }}</span></td>
+  <td data-label="Risk">{{ risk_badge(p.risk_report.level if p.risk_report else 'low', p.risk_score or 0) }}</td>
+  <td data-label="Listed" class="small muted">{{ p.created_at|ago }}</td>
+  <td data-label=""><form method="post" action="{{ url_for('market.remove_listing', pid=p.id) }}" onsubmit="return confirm('Remove this listing?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-danger">Remove</button></form></td></tr>{% endfor %}</tbody></table>{{ pager(pg) }}
+{% else %}{{ empty('tag', 'You haven\'t listed anything yet', 'Create your first listing. Every listing is risk-checked before it goes live.', url_for('market.new_listing'), 'Create a listing') }}{% endif %}
+</section>
+{% endblock %}

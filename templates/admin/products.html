@@ -1,0 +1,6 @@
+{% extends 'base.html' %}{% from '_macros.html' import risk_badge with context %}{% block title %}Listings · Admin{% endblock %}
+{% block content %}<h1 class="h2">Listing moderation</h1><div class="mt">{% include 'admin/_nav.html' %}</div>
+<div class="glass pad"><div class="table-wrap"><table class="o"><tr><th>Listing</th><th>Seller</th><th>Price</th><th>Status</th><th>Risk</th><th></th></tr>
+{% for p in rows %}<tr><td><a href="{{ url_for('market.product', pid=p.id) }}">{{ p.title[:40] }}</a></td><td>{{ p.seller.name }}</td><td>{{ p.price|money }}</td><td><span class="badge {{ 'b-ok' if p.status=='active' else 'b-warn' }}">{{ p.status }}</span></td><td>{{ risk_badge(p.risk_report.level if p.risk_report else 'low', p.risk_score or 0) }}</td>
+<td><form method="post" class="row" style="gap:6px"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<button class="btn btn-sm btn-ok" formaction="{{ url_for('admin.product_action', pid=p.id, action='approve') }}">Approve</button><button class="btn btn-sm" formaction="{{ url_for('admin.product_action', pid=p.id, action='flag') }}">Flag</button><button class="btn btn-sm btn-danger" formaction="{{ url_for('admin.product_action', pid=p.id, action='remove') }}">Remove</button></form></td></tr>{% endfor %}</table></div></div>{% endblock %}
